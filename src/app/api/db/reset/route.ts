@@ -10,11 +10,11 @@ export async function POST(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const resetKey = searchParams.get('key');
-    
+
     // Only allow superadmin to reset database (reset key disabled in production)
     const session = await getSession();
     const hasValidKey = RESET_KEY && resetKey === RESET_KEY;
-    
+
     if (!hasValidKey && (!session || session.role !== 'superadmin')) {
       return NextResponse.json(
         { success: false, error: 'Only superadmin can reset the database' },
@@ -37,28 +37,28 @@ export async function POST(request: NextRequest) {
     const superAdminId = superAdminResult.rows[0].id;
 
     // Delete in order to respect foreign key constraints
-    
+
     // 1. Delete all work reports
     await pool.query('DELETE FROM work_reports');
-    
+
     // 2. Delete all manager_departments mappings
     await pool.query('DELETE FROM manager_departments');
-    
+
     // 3. Delete all OTP tokens
     await pool.query('DELETE FROM otp_tokens');
-    
+
     // 4. Delete all password reset tokens
     await pool.query('DELETE FROM password_reset_tokens');
-    
+
     // 5. Delete all users except super admin
     await pool.query('DELETE FROM employees WHERE id != $1', [superAdminId]);
-    
+
     // 6. Delete all departments
     await pool.query('DELETE FROM departments');
-    
+
     // 7. Delete all branches
     await pool.query('DELETE FROM branches');
-    
+
     // 8. Delete all entities
     await pool.query('DELETE FROM entities');
 
@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         success: false,
-        error: error instanceof Error ? error.message : 'Failed to reset database',
+        error: 'Failed to reset database',
       },
       { status: 500 }
     );

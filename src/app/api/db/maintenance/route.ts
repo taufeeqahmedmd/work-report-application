@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { 
+import {
   getDatabaseStats,
   healthCheck
 } from '@/lib/db/database';
@@ -41,34 +41,34 @@ export async function POST(request: NextRequest) {
     if (!health.healthy) {
       return NextResponse.json<ApiResponse>({
         success: false,
-        error: `Database unhealthy: ${health.error}`,
+        error: 'Database is currently unavailable. Please try again later.',
       }, { status: 503 });
     }
-    
+
     const url = new URL(request.url);
     const doClearQueue = url.searchParams.get('clearQueue') === 'true';
-    
+
     logger.info('[Maintenance] Starting database maintenance...');
-    
+
     const result: MaintenanceResult = {
       vacuum: { success: true, message: 'PostgreSQL handles vacuuming automatically (autovacuum)' },
       queueCleanup: { success: false, clearedItems: 0 },
       databaseStats: { poolSize: 0, poolIdleCount: 0, poolWaitingCount: 0 },
       timestamp: new Date().toISOString(),
     };
-    
+
     // Clear queue history if requested
     if (doClearQueue) {
       logger.info('[Maintenance] Clearing queue history...');
       const queueStatusBefore = getQueueStatus();
       const itemsBeforeCleanup = queueStatusBefore.completed + queueStatusBefore.failed;
       clearQueueHistory();
-      result.queueCleanup = { 
-        success: true, 
-        clearedItems: itemsBeforeCleanup 
+      result.queueCleanup = {
+        success: true,
+        clearedItems: itemsBeforeCleanup
       };
     }
-    
+
     // Get final stats
     const finalStats = getDatabaseStats();
     result.databaseStats = {
@@ -76,20 +76,20 @@ export async function POST(request: NextRequest) {
       poolIdleCount: finalStats.poolIdleCount,
       poolWaitingCount: finalStats.poolWaitingCount,
     };
-    
+
     logger.info('[Maintenance] Database maintenance completed:', result);
-    
+
     return NextResponse.json<ApiResponse<MaintenanceResult>>({
       success: true,
       data: result,
       message: 'Database maintenance completed successfully',
     });
-    
+
   } catch (error) {
     console.error('[Maintenance] Error:', error);
     return NextResponse.json<ApiResponse>({
       success: false,
-      error: error instanceof Error ? error.message : 'Maintenance failed',
+      error: 'Maintenance operation failed',
     }, { status: 500 });
   }
 }

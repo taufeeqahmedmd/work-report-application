@@ -1,8 +1,24 @@
 import { NextResponse } from 'next/server';
 import { pool, getPoolHealth } from '@/lib/db/database';
+import { getSession } from '@/lib/auth';
+import type { ApiResponse } from '@/types';
 
+/**
+ * GET /api/debug/db
+ * Database connection diagnostic endpoint
+ * RESTRICTED: Superadmin only
+ */
 export async function GET() {
   try {
+    // Authentication guard - superadmin only
+    const session = await getSession();
+    if (!session || session.role !== 'superadmin') {
+      return NextResponse.json<ApiResponse>(
+        { success: false, error: 'Unauthorized' },
+        { status: 403 }
+      );
+    }
+
     // 1. Check pool health
     const poolHealth = getPoolHealth();
 
@@ -11,7 +27,7 @@ export async function GET() {
     await pool.query('SELECT 1');
     const duration = performance.now() - start;
 
-    // 3. List tables to check schema
+    // 3. Check if key tables exist (without exposing full table list)
     const tablesRes = await pool.query(`
       SELECT table_name 
       FROM information_schema.tables 
@@ -20,43 +36,43 @@ export async function GET() {
     `);
     const tables = tablesRes.rows.map(r => r.table_name);
 
-    // 4. Check specifically for employees table and count
-    let employeesCount = 'Table not found';
+    const requiredTables = ['employees', 'work_reports', 'departments', 'entities', 'branches'];
+    const tableStatus: Record<string, boolean> = {};
+    for (const table of requiredTables) {
+      tableStatus[table] = tables.includes(table);
+    }
+
+    // 4. Check employee count (without exposing details)
+    let employeesCount: number | string = 'Table not found';
     if (tables.includes('employees')) {
       try {
         const countRes = await pool.query('SELECT COUNT(*) FROM employees');
-        employeesCount = countRes.rows[0].count;
-      } catch (err) {
-        employeesCount = `Error counting: ${err instanceof Error ? err.message : String(err)}`;
+        employeesCount = parseInt(countRes.rows[0].count);
+      } catch {
+        employeesCount = 'Error counting employees';
       }
     }
-
-    // 5. Check environment
-    const envInfo = {
-      NODE_ENV: process.env.NODE_ENV,
-      DATABASE_URL_CONFIGURED: !!process.env.DATABASE_URL,
-      // Mask password in DB URL
-      DATABASE_URL_MASKED: process.env.DATABASE_URL 
-        ? process.env.DATABASE_URL.replace(/:[^:@]+@/, ':***@')
-        : 'Not set'
-    };
 
     return NextResponse.json({
       success: true,
       message: 'Database connection diagnostic',
       poolHealth,
       connectionDuration: `${duration.toFixed(2)}ms`,
-      tables,
+      tableStatus,
       employeesCount,
-      env: envInfo,
+      env: {
+        NODE_ENV: process.env.NODE_ENV,
+        DATABASE_URL_CONFIGURED: !!process.env.DATABASE_URL,
+      },
       timestamp: new Date().toISOString()
     });
 
   } catch (error) {
+    // Log full error server-side only
+    console.error('[DEBUG/DB] Diagnostic error:', error);
     return NextResponse.json({
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
-      details: error instanceof Error ? JSON.stringify(error, Object.getOwnPropertyNames(error)) : String(error),
+      error: 'Database diagnostic failed',
       env: {
         DATABASE_URL_CONFIGURED: !!process.env.DATABASE_URL
       }

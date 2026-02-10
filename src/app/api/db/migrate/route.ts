@@ -28,7 +28,7 @@ export async function POST() {
           WHERE table_name = 'work_reports' AND column_name = 'on_duty'
         ) as exists
       `);
-      
+
       if (!checkOnDuty.rows[0].exists) {
         await pool.query(`
           ALTER TABLE work_reports 
@@ -39,10 +39,10 @@ export async function POST() {
         migrations.push({ name: 'add_on_duty_column', success: true, error: 'Column already exists' });
       }
     } catch (error) {
-      migrations.push({ 
-        name: 'add_on_duty_column', 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Unknown error' 
+      migrations.push({
+        name: 'add_on_duty_column',
+        success: false,
+        error: 'Migration step failed'
       });
     }
 
@@ -54,7 +54,7 @@ export async function POST() {
           WHERE table_name = 'holidays'
         ) as exists
       `);
-      
+
       if (!checkHolidays.rows[0].exists) {
         await pool.query(`
           CREATE TABLE holidays (
@@ -73,10 +73,10 @@ export async function POST() {
         migrations.push({ name: 'create_holidays_table', success: true, error: 'Table already exists' });
       }
     } catch (error) {
-      migrations.push({ 
-        name: 'create_holidays_table', 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Unknown error' 
+      migrations.push({
+        name: 'create_holidays_table',
+        success: false,
+        error: 'Migration step failed'
       });
     }
 
@@ -91,9 +91,9 @@ export async function POST() {
   } catch (error) {
     console.error('[API] Migration error:', error);
     return NextResponse.json(
-      { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Migration failed' 
+      {
+        success: false,
+        error: 'Migration failed'
       },
       { status: 500 }
     );
@@ -103,10 +103,6 @@ export async function POST() {
 export async function GET() {
   return NextResponse.json({
     message: 'Use POST request to run migrations. Requires superadmin authentication.',
-    availableMigrations: [
-      'add_on_duty_column - Adds on_duty column to work_reports table', 
-      'create_holidays_table - Creates holidays table if missing',
-    ],
   });
 }
 

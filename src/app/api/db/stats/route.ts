@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
-import { 
-  getDatabaseStats, 
-  healthCheck, 
+import {
+  getDatabaseStats,
+  healthCheck,
   isDatabaseConnected,
-  getConnectionStatus 
+  getConnectionStatus
 } from '@/lib/db/database';
 import { getQueueStatus, getRecentQueueFailures } from '@/lib/queue/work-report-queue';
 import type { ApiResponse } from '@/types';
@@ -62,7 +62,7 @@ export async function GET() {
     const health = await healthCheck();
     const connected = await isDatabaseConnected();
     const connectionStatus = getConnectionStatus();
-    
+
     // Get database stats (always try, even if unhealthy - stats might still be available)
     let dbStats = null;
     try {
@@ -70,7 +70,7 @@ export async function GET() {
     } catch (error) {
       console.error('[API] Failed to get database stats:', error);
     }
-    
+
     // Queue status
     const queueStatus = getQueueStatus();
     const recentFailures = getRecentQueueFailures(5).map(item => ({
@@ -79,17 +79,16 @@ export async function GET() {
       timestamp: item.timestamp,
       retries: item.retries,
     }));
-    
+
     // System stats
     const memoryUsage = process.memoryUsage();
-    
+
     const response: DatabaseStatsResponse = {
       database: {
         healthy: health.healthy,
         connected,
         responseTimeMs: health.responseTimeMs,
-        error: health.error || connectionStatus.lastError || undefined,
-        connectionUrl: connectionStatus.databaseUrl,
+        error: health.error ? 'Database health check failed' : (connectionStatus.lastError ? 'Connection issue detected' : undefined),
         stats: dbStats,
       },
       queue: {
@@ -107,23 +106,23 @@ export async function GET() {
         },
       },
     };
-    
+
     // Determine overall health status
     const overallHealthy = health.healthy && queueStatus.queueHealthy;
-    
+
     return NextResponse.json<ApiResponse<DatabaseStatsResponse>>({
       success: true,
       data: response,
       message: overallHealthy ? 'System healthy' : 'System degraded - check details',
-    }, { 
-      status: overallHealthy ? 200 : 503 
+    }, {
+      status: overallHealthy ? 200 : 503
     });
-    
+
   } catch (error) {
     console.error('[API] Database stats error:', error);
     return NextResponse.json<ApiResponse>({
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to get database stats',
+      error: 'Failed to get database stats',
     }, { status: 500 });
   }
 }

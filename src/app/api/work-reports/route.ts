@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { logger } from '@/lib/logger';
-import { 
-  createWorkReport, 
-  getWorkReports, 
+import {
+  createWorkReport,
+  getWorkReports,
   getWorkReportsByEmployee,
   getWorkReportsByDateRange,
   getWorkReportsByDateRangeAndDepartments,
@@ -46,11 +46,11 @@ export async function GET(request: NextRequest) {
     // Managers, admins, and superadmins can view all reports
     const canViewAll = session.role === 'admin' || session.role === 'superadmin' || session.role === 'manager';
     const isManager = session.role === 'manager';
-    
+
     // Return unique departments list if requested
     if (getDepartments === 'true' && canViewAll) {
       // For managers, only return their assigned departments
-      const departments = isManager 
+      const departments = isManager
         ? await getUniqueWorkReportDepartmentsForManager(session.id)
         : await getUniqueWorkReportDepartments();
       return NextResponse.json<ApiResponse<{ departments: string[] }>>({
@@ -58,7 +58,7 @@ export async function GET(request: NextRequest) {
         data: { departments },
       });
     }
-    
+
     if (!canViewAll && employeeId && employeeId !== session.employeeId) {
       return NextResponse.json<ApiResponse>(
         { success: false, error: 'You can only view your own reports' },
@@ -71,7 +71,7 @@ export async function GET(request: NextRequest) {
     // For managers, filter by their assigned departments
     if (isManager) {
       const managerDeptIds = await getManagerDepartmentIds(session.id);
-      
+
       if (managerDeptIds.length === 0) {
         // Manager has no departments assigned, return empty
         return NextResponse.json<ApiResponse<{ reports: WorkReport[]; total: number }>>({
@@ -82,13 +82,13 @@ export async function GET(request: NextRequest) {
           },
         });
       }
-      
+
       // Get department names for the manager
       const allDepts = await getAllDepartments();
       const managerDeptNames = allDepts
         .filter(d => managerDeptIds.includes(d.id))
         .map(d => d.name);
-      
+
       // Search functionality for managers (filtered by their departments)
       if (search) {
         reports = await searchWorkReportsForManager(search, session.id, department || undefined);
@@ -170,28 +170,23 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    const errorStack = error instanceof Error ? error.stack : undefined;
-    const isConnectionError = 
+    const isConnectionError =
       errorMessage.includes('ECONNREFUSED') ||
       errorMessage.includes('ETIMEDOUT') ||
       errorMessage.includes('Connection terminated') ||
       errorMessage.includes('connection timeout') ||
       errorMessage.includes('ENOTFOUND');
-    
+
+    // Log full error server-side only
     logger.error('Fetch work reports error:', errorMessage);
     console.error('[API] Work reports fetch error:', error);
-    console.error('[API] Error stack:', errorStack);
-    
-    // Include detailed error in development or if DEBUG env is set
-    const showDetailedError = process.env.NODE_ENV === 'development' || process.env.DEBUG === 'true';
-    
+
     return NextResponse.json<ApiResponse>(
-      { 
-        success: false, 
-        error: isConnectionError 
-          ? 'Database connection error. Please try again in a few moments.' 
+      {
+        success: false,
+        error: isConnectionError
+          ? 'Database connection error. Please try again in a few moments.'
           : 'Failed to fetch work reports',
-        ...(showDetailedError && { details: errorMessage })
       },
       { status: 500 }
     );
@@ -255,21 +250,21 @@ export async function POST(request: NextRequest) {
     }, { status: 201 });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    const isConnectionError = 
+    const isConnectionError =
       errorMessage.includes('ECONNREFUSED') ||
       errorMessage.includes('ETIMEDOUT') ||
       errorMessage.includes('Connection terminated') ||
       errorMessage.includes('connection timeout') ||
       errorMessage.includes('ENOTFOUND');
-    
+
     logger.error('Submit work report error:', errorMessage);
     console.error('[API] Work report submit error:', error);
-    
+
     return NextResponse.json<ApiResponse>(
-      { 
-        success: false, 
-        error: isConnectionError 
-          ? 'Database connection error. Please try again in a few moments.' 
+      {
+        success: false,
+        error: isConnectionError
+          ? 'Database connection error. Please try again in a few moments.'
           : 'Failed to submit work report'
       },
       { status: 500 }

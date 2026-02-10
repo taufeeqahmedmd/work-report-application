@@ -3,8 +3,9 @@ import { randomBytes } from 'crypto';
 import { hashPassword } from '@/lib/auth';
 import { sendPasswordResetEmail } from '@/lib/email';
 import { logger } from '@/lib/logger';
-import { 
-  getEmployeeByEmployeeId, 
+import { checkResetPasswordRateLimit, recordResetPasswordAttempt, getClientIp } from '@/lib/rate-limiter';
+import {
+  getEmployeeByEmployeeId,
   getEmployeeByEmail,
   createPasswordResetToken,
   getPasswordResetToken,
@@ -16,6 +17,28 @@ import type { ApiResponse } from '@/types';
 // POST: Request password reset (generates token)
 export async function POST(request: NextRequest) {
   try {
+    // --- Rate Limiting ---
+    const clientIp = getClientIp(request.headers);
+    const rateLimit = checkResetPasswordRateLimit(clientIp);
+
+    if (!rateLimit.allowed) {
+      return NextResponse.json<ApiResponse>(
+        {
+          success: false,
+          error: rateLimit.reason || 'Too many password reset requests. Please try again later.',
+        },
+        {
+          status: 429,
+          headers: {
+            'Retry-After': String(rateLimit.retryAfterSeconds),
+          },
+        }
+      );
+    }
+
+    // Record this attempt
+    recordResetPasswordAttempt(clientIp);
+
     const body = await request.json();
     const { employeeId, email } = body;
 
@@ -52,7 +75,7 @@ export async function POST(request: NextRequest) {
 
     // Send password reset email
     const emailSent = await sendPasswordResetEmail(employee.email, token, employee.name);
-    
+
     if (!emailSent) {
       console.error(`[Password Reset] Failed to send email to ${employee.email}`);
     } else {

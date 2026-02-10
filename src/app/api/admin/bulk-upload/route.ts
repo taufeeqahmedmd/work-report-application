@@ -14,7 +14,7 @@ interface BulkUploadResult {
 export async function POST(request: NextRequest) {
   try {
     const session = await getSession();
-    
+
     if (!session || !isAdmin(session)) {
       return NextResponse.json<ApiResponse>(
         { success: false, error: 'Unauthorized' },
@@ -120,10 +120,11 @@ export async function POST(request: NextRequest) {
         result.successful++;
       } catch (error) {
         result.failed++;
+        console.error(`[BULK_UPLOAD] Row ${rowNum} error:`, error);
         result.errors.push({
           row: rowNum,
           employeeId: user.employeeId || 'Unknown',
-          error: error instanceof Error ? error.message : 'Unknown error',
+          error: 'Failed to create employee',
         });
       }
     }

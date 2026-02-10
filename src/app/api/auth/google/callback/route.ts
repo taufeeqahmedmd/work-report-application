@@ -96,7 +96,7 @@ async function getGoogleUserProfile(accessToken: string): Promise<{ email: strin
  */
 function isEmailDomainAllowed(email: string): boolean {
   const allowedDomains = process.env.GOOGLE_ALLOWED_DOMAINS;
-  
+
   if (!allowedDomains) {
     // If no domains are configured, allow all (not recommended for production)
     logger.warn('GOOGLE_ALLOWED_DOMAINS is not configured. Allowing all domains.');
@@ -185,7 +185,7 @@ export async function GET(request: NextRequest) {
 
     // Look up user in database by email
     const employee = await getEmployeeByEmail(googleUser.email);
-    
+
     if (!employee) {
       return NextResponse.redirect(
         new URL(
@@ -211,7 +211,7 @@ export async function GET(request: NextRequest) {
 
     // Determine redirect URL
     let redirectUrl = callbackUrl || getDashboardUrl(employee.role);
-    
+
     // Ensure redirectUrl is a valid absolute URL or path
     try {
       // Test if it's already a valid absolute URL
@@ -224,17 +224,14 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.redirect(redirectUrl);
   } catch (error) {
+    // Log full error details server-side only
     console.error('Google OAuth callback error:', error);
-    const errorMessage = error instanceof Error ? error.message : 'An error occurred during Google authentication';
-    console.error('Error details:', {
-      message: errorMessage,
-      stack: error instanceof Error ? error.stack : undefined,
-      requestUrl: request.url,
-      searchParams: Object.fromEntries(request.nextUrl.searchParams),
-    });
+    if (error instanceof Error) {
+      console.error('Error details:', { message: error.message, stack: error.stack });
+    }
     return NextResponse.redirect(
       new URL(
-        `/login?error=${encodeURIComponent(errorMessage)}`,
+        `/login?error=${encodeURIComponent('An unexpected error occurred during authentication. Please try again.')}`,
         request.url
       )
     );

@@ -1,12 +1,23 @@
 import { NextResponse } from 'next/server';
 import { pool } from '@/lib/db/database';
+import { getSession } from '@/lib/auth';
+import type { ApiResponse } from '@/types';
 
 /**
  * GET /api/db/test-query
  * Tests basic database queries to diagnose issues
- * This endpoint helps identify schema/table problems
+ * RESTRICTED: Superadmin only
  */
 export async function GET() {
+  // Authentication guard - superadmin only
+  const session = await getSession();
+  if (!session || session.role !== 'superadmin') {
+    return NextResponse.json<ApiResponse>(
+      { success: false, error: 'Unauthorized' },
+      { status: 403 }
+    );
+  }
+
   const results: Record<string, unknown> = {
     timestamp: new Date().toISOString(),
     tests: {},
@@ -19,10 +30,10 @@ export async function GET() {
       ...results.tests as object,
       connection: { success: true, result: r1.rows[0] },
     };
-  } catch (error) {
+  } catch {
     results.tests = {
       ...results.tests as object,
-      connection: { success: false, error: error instanceof Error ? error.message : 'Unknown error' },
+      connection: { success: false, error: 'Connection test failed' },
     };
   }
 
@@ -38,29 +49,28 @@ export async function GET() {
       ...results.tests as object,
       tableExists: { success: true, exists: r2.rows[0].exists },
     };
-  } catch (error) {
+  } catch {
     results.tests = {
       ...results.tests as object,
-      tableExists: { success: false, error: error instanceof Error ? error.message : 'Unknown error' },
+      tableExists: { success: false, error: 'Table check failed' },
     };
   }
 
-  // Test 3: Check work_reports table schema
+  // Test 3: Check work_reports column count (without exposing column names/types)
   try {
     const r3 = await pool.query(`
-      SELECT column_name, data_type, is_nullable
+      SELECT COUNT(*) as column_count
       FROM information_schema.columns
       WHERE table_name = 'work_reports'
-      ORDER BY ordinal_position
     `);
     results.tests = {
       ...results.tests as object,
-      tableSchema: { success: true, columns: r3.rows },
+      tableSchema: { success: true, columnCount: parseInt(r3.rows[0].column_count) },
     };
-  } catch (error) {
+  } catch {
     results.tests = {
       ...results.tests as object,
-      tableSchema: { success: false, error: error instanceof Error ? error.message : 'Unknown error' },
+      tableSchema: { success: false, error: 'Schema check failed' },
     };
   }
 
@@ -71,33 +81,27 @@ export async function GET() {
       ...results.tests as object,
       workReportsCount: { success: true, count: parseInt(r4.rows[0].count) },
     };
-  } catch (error) {
+  } catch {
     results.tests = {
       ...results.tests as object,
-      workReportsCount: { success: false, error: error instanceof Error ? error.message : 'Unknown error' },
+      workReportsCount: { success: false, error: 'Count query failed' },
     };
   }
 
-  // Test 5: Try to fetch one work report
+  // Test 5: Check if work_reports has data (without exposing sample data)
   try {
-    const r5 = await pool.query('SELECT * FROM work_reports LIMIT 1');
+    const r5 = await pool.query('SELECT COUNT(*) as count FROM work_reports LIMIT 1');
     results.tests = {
       ...results.tests as object,
-      sampleWorkReport: { 
-        success: true, 
-        hasData: r5.rows.length > 0,
-        sample: r5.rows[0] ? { 
-          id: r5.rows[0].id,
-          employee_id: r5.rows[0].employee_id,
-          date: r5.rows[0].date,
-          status: r5.rows[0].status,
-        } : null 
+      workReportsData: {
+        success: true,
+        hasData: parseInt(r5.rows[0].count) > 0,
       },
     };
-  } catch (error) {
+  } catch {
     results.tests = {
       ...results.tests as object,
-      sampleWorkReport: { success: false, error: error instanceof Error ? error.message : 'Unknown error' },
+      workReportsData: { success: false, error: 'Data check failed' },
     };
   }
 
@@ -108,28 +112,10 @@ export async function GET() {
       ...results.tests as object,
       employeesCount: { success: true, count: parseInt(r6.rows[0].count) },
     };
-  } catch (error) {
+  } catch {
     results.tests = {
       ...results.tests as object,
-      employeesCount: { success: false, error: error instanceof Error ? error.message : 'Unknown error' },
-    };
-  }
-
-  // Test 7: Check specific employee KIAD0115
-  try {
-    const r7 = await pool.query('SELECT employee_id, name, email, department, status FROM employees WHERE employee_id = $1', ['KIAD0115']);
-    results.tests = {
-      ...results.tests as object,
-      employeeKIAD0115: { 
-        success: true, 
-        found: r7.rows.length > 0,
-        data: r7.rows[0] || null 
-      },
-    };
-  } catch (error) {
-    results.tests = {
-      ...results.tests as object,
-      employeeKIAD0115: { success: false, error: error instanceof Error ? error.message : 'Unknown error' },
+      employeesCount: { success: false, error: 'Employees count failed' },
     };
   }
 
@@ -143,4 +129,3 @@ export async function GET() {
     ...results,
   }, { status: allPassed ? 200 : 500 });
 }
-

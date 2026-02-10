@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { authenticateUser, setSessionCookie, employeeToSessionUser } from '@/lib/auth';
+import { checkLoginRateLimit, recordFailedLogin, clearLoginAttempts, getClientIp } from '@/lib/rate-limiter';
 import type { LoginCredentials, ApiResponse, SafeEmployee, PageAccess } from '@/types';
 import { DEFAULT_PAGE_ACCESS } from '@/types';
 
@@ -19,22 +20,53 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // --- Rate Limiting ---
+    const clientIp = getClientIp(request.headers);
+    const rateLimit = checkLoginRateLimit(clientIp, employeeId);
+
+    if (!rateLimit.allowed) {
+      return NextResponse.json<ApiResponse>(
+        {
+          success: false,
+          error: rateLimit.reason || 'Too many login attempts. Please try again later.',
+        },
+        {
+          status: 429,
+          headers: {
+            'Retry-After': String(rateLimit.retryAfterSeconds),
+          },
+        }
+      );
+    }
+
     // Authenticate user
     const result = await authenticateUser({ employeeId, password });
 
     if (!result.success || !result.user) {
+      // Record failed attempt
+      recordFailedLogin(clientIp, employeeId);
+
+      // Check remaining attempts after recording
+      const updatedLimit = checkLoginRateLimit(clientIp, employeeId);
+      const attemptsWarning = updatedLimit.remainingAttempts <= 2 && updatedLimit.remainingAttempts > 0
+        ? ` ${updatedLimit.remainingAttempts} attempt(s) remaining before lockout.`
+        : '';
+
       return NextResponse.json<ApiResponse>(
         {
           success: false,
-          error: result.error || 'Authentication failed',
+          error: (result.error || 'Authentication failed') + attemptsWarning,
         },
         { status: 401 }
       );
     }
 
+    // Successful login — clear rate limit for this employee ID
+    clearLoginAttempts(employeeId);
+
     // Create session
     const sessionUser = employeeToSessionUser(result.user);
-    
+
     try {
       await setSessionCookie(sessionUser);
     } catch (cookieError) {
@@ -88,20 +120,13 @@ export async function POST(request: NextRequest) {
     return response;
   } catch (error) {
     console.error('[LOGIN ERROR]', error);
-    const errorMessage = error instanceof Error ? error.message : 'An error occurred during login';
-    
-    // In production, we usually hide internal errors, but for debugging this 500 issue,
-    // we will expose the error message to the client.
-    // TODO: Revert this to secure error handling once the issue is resolved.
-    const userMessage = errorMessage;
-    
+
     return NextResponse.json<ApiResponse>(
       {
         success: false,
-        error: userMessage,
+        error: 'An error occurred during login. Please try again.',
       },
       { status: 500 }
     );
   }
 }
-

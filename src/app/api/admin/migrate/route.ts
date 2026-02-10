@@ -7,7 +7,7 @@ import type { ApiResponse } from '@/types';
 export async function POST() {
   try {
     const session = await getSession();
-    
+
     if (!session || session.role !== 'superadmin') {
       return NextResponse.json<ApiResponse>(
         { success: false, error: 'Only superadmins can run migrations' },
@@ -25,7 +25,7 @@ export async function POST() {
   } catch (error) {
     console.error('Migration error:', error);
     return NextResponse.json<ApiResponse>(
-      { success: false, error: `Migration failed: ${error instanceof Error ? error.message : 'Unknown error'}` },
+      { success: false, error: 'Migration failed. Check server logs for details.' },
       { status: 500 }
     );
   }
@@ -35,7 +35,7 @@ export async function POST() {
 export async function GET() {
   try {
     const session = await getSession();
-    
+
     if (!session || session.role !== 'superadmin') {
       return NextResponse.json<ApiResponse>(
         { success: false, error: 'Only superadmins can check migrations' },
@@ -49,7 +49,7 @@ export async function GET() {
       FROM information_schema.tables 
       WHERE table_schema = 'public'
     `);
-    
+
     const tableNames = result.rows.map((row: { table_name: string }) => row.table_name);
 
     const status = {
