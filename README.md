@@ -600,3 +600,10 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ⭐ Star this repo if you find it helpful!
 
 </div>
+
+<!--
+docker compose -f docker-compose.production.yml down
+docker compose -f docker-compose.production.yml up -d --build
+docker exec work-report-app printenv DATABASE_URL
+docker logs -f work-report-app
+-->
