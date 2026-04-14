@@ -702,14 +702,14 @@ export default function AdminPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen pt-14 flex items-center justify-center">
+      <div className="min-h-screen pt-16 flex items-center justify-center">
         <Loader2 className="h-6 w-6 animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen pt-14">
+    <div className="min-h-screen pt-16">
       <div className="container py-8 px-4 md:px-6">
         <div className="max-w-6xl mx-auto">
           {/* Header */}

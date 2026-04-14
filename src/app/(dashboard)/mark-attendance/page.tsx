@@ -197,7 +197,7 @@ export default function MarkAttendancePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen pt-14 flex items-center justify-center">
+      <div className="min-h-screen pt-16 flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin" />
       </div>
     );
@@ -206,7 +206,7 @@ export default function MarkAttendancePage() {
   // Check permission
   if (!session?.pageAccess?.mark_attendance || session.department !== 'Operations') {
     return (
-      <div className="min-h-screen pt-14 flex items-center justify-center">
+      <div className="min-h-screen pt-16 flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold mb-2">Access Denied</h1>
           <p className="text-muted-foreground">You do not have permission to access this page.</p>
@@ -216,7 +216,7 @@ export default function MarkAttendancePage() {
   }
 
   return (
-    <div className="min-h-screen pt-14 bg-gradient-to-br from-background via-background to-muted/20">
+    <div className="min-h-screen pt-16 bg-gradient-to-br from-background via-background to-muted/20">
       <div className="container py-8 px-4 md:px-6">
         <div className="max-w-7xl mx-auto space-y-6">
           {/* Header */}

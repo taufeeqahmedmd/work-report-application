@@ -452,7 +452,7 @@ function LoadingFallback() {
 
 export default function ResetPasswordPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 pt-14">
+    <div className="min-h-screen flex items-center justify-center px-4 pt-16">
       <Suspense fallback={<LoadingFallback />}>
         <ResetPasswordContent />
       </Suspense>

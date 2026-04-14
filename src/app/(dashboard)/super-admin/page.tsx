@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -89,6 +89,34 @@ export default function SuperAdminPage() {
   const [templateDownloaded, setTemplateDownloaded] = useState(false);
   const [bulkUploading, setBulkUploading] = useState(false);
   const [bulkUploadFile, setBulkUploadFile] = useState<File | null>(null);
+
+  // Work report CSV export (super-admin)
+  const [exportAllDates, setExportAllDates] = useState(false);
+  const [exportEntityId, setExportEntityId] = useState<string>('all');
+  const [exportBranchId, setExportBranchId] = useState<string>('all');
+  const [exportDepartment, setExportDepartment] = useState<string>('all');
+  const [exportStatus, setExportStatus] = useState<string>('all');
+  const [exportStartDate, setExportStartDate] = useState('');
+  const [exportEndDate, setExportEndDate] = useState('');
+  const [exportingReports, setExportingReports] = useState(false);
+
+  const exportBranchesFiltered = useMemo(() => {
+    if (exportEntityId === 'all') return branches;
+    return branches.filter((b) => b.entityId === Number(exportEntityId));
+  }, [branches, exportEntityId]);
+
+  const exportDepartmentOptions = useMemo(() => {
+    let list = departments;
+    if (exportEntityId !== 'all') {
+      const eid = Number(exportEntityId);
+      list = departments.filter((d) => d.entityId === eid || d.entityId == null);
+    }
+    return [...new Set(list.map((d) => d.name))].sort((a, b) => a.localeCompare(b));
+  }, [departments, exportEntityId]);
+
+  useEffect(() => {
+    setExportBranchId('all');
+  }, [exportEntityId]);
 
   // Confirmation dialog
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
@@ -946,16 +974,63 @@ export default function SuperAdminPage() {
     return branches.find(b => b.id === branchId)?.name || '-';
   };
 
+  const handleExportWorkReports = async () => {
+    if (!exportAllDates && (!exportStartDate || !exportEndDate)) {
+      toast.error('Choose a start and end date, or enable full export (all dates).');
+      return;
+    }
+    setExportingReports(true);
+    try {
+      const params = new URLSearchParams();
+      if (exportAllDates) {
+        params.set('allDates', 'true');
+      } else {
+        params.set('startDate', exportStartDate);
+        params.set('endDate', exportEndDate);
+      }
+      if (exportEntityId !== 'all') params.set('entityId', exportEntityId);
+      if (exportBranchId !== 'all') params.set('branchId', exportBranchId);
+      if (exportDepartment !== 'all') params.set('department', exportDepartment);
+      if (exportStatus !== 'all') params.set('status', exportStatus);
+
+      const res = await fetch(`/api/admin/work-reports/export?${params.toString()}`);
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({} as { error?: string }));
+        toast.error(err.error || 'Export failed');
+        return;
+      }
+      const blob = await res.blob();
+      const dispo = res.headers.get('Content-Disposition');
+      let fname = 'work-reports-export.csv';
+      if (dispo) {
+        const m = /filename="([^"]+)"/.exec(dispo);
+        if (m) fname = m[1];
+      }
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fname;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success('Download started');
+    } catch (error) {
+      console.error(error);
+      toast.error('Export failed');
+    } finally {
+      setExportingReports(false);
+    }
+  };
+
   if (loading) {
     return (
-      <div className="min-h-screen pt-14 flex items-center justify-center">
+      <div className="min-h-screen pt-16 flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen pt-14">
+    <div className="min-h-screen pt-16">
       <div className="container py-8 px-4 md:px-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
@@ -967,7 +1042,7 @@ export default function SuperAdminPage() {
         </div>
 
         {/* Stats */}
-        <div className="grid gap-4 md:grid-cols-5 mb-8">
+        <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 mb-8">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Entities</CardTitle>
@@ -1135,8 +1210,141 @@ export default function SuperAdminPage() {
           </CardContent>
         </Card>
 
+        {/* Export work reports */}
+        <Card className="mb-8">
+          <CardHeader>
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+              <div className="flex items-center gap-2">
+                <Download className="h-5 w-5 text-primary shrink-0" />
+                <div>
+                  <CardTitle>Export work reports</CardTitle>
+                  <CardDescription>
+                    Download CSV (opens in Excel). Use filters for a subset, or full export for all dates (up to 100,000 rows).
+                  </CardDescription>
+                </div>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <label className="flex items-start gap-3 cursor-pointer rounded-lg border p-3 sm:p-4">
+              <input
+                type="checkbox"
+                className="mt-1 h-4 w-4 rounded border-input"
+                checked={exportAllDates}
+                onChange={(e) => setExportAllDates(e.target.checked)}
+              />
+              <div>
+                <p className="text-sm font-medium">Full export (all dates)</p>
+                <p className="text-xs text-muted-foreground">
+                  When checked, date fields are ignored. Narrow with entity, branch, department, or status if needed.
+                </p>
+              </div>
+            </label>
+
+            {!exportAllDates && (
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="export-start">Start date</Label>
+                  <Input
+                    id="export-start"
+                    type="date"
+                    value={exportStartDate}
+                    onChange={(e) => setExportStartDate(e.target.value)}
+                    className="w-full min-w-0"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="export-end">End date</Label>
+                  <Input
+                    id="export-end"
+                    type="date"
+                    value={exportEndDate}
+                    onChange={(e) => setExportEndDate(e.target.value)}
+                    className="w-full min-w-0"
+                  />
+                </div>
+              </div>
+            )}
+
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="space-y-2">
+                <Label>Entity</Label>
+                <select
+                  className="flex h-10 w-full min-w-0 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  value={exportEntityId}
+                  onChange={(e) => setExportEntityId(e.target.value)}
+                >
+                  <option value="all">All entities</option>
+                  {entities.map((entity) => (
+                    <option key={entity.id} value={entity.id}>
+                      {entity.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-2">
+                <Label>Branch</Label>
+                <select
+                  className="flex h-10 w-full min-w-0 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  value={exportBranchId}
+                  onChange={(e) => setExportBranchId(e.target.value)}
+                >
+                  <option value="all">All branches</option>
+                  {exportBranchesFiltered.map((b) => (
+                    <option key={b.id} value={b.id}>
+                      {b.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-2">
+                <Label>Department</Label>
+                <select
+                  className="flex h-10 w-full min-w-0 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  value={exportDepartment}
+                  onChange={(e) => setExportDepartment(e.target.value)}
+                >
+                  <option value="all">All departments</option>
+                  {exportDepartmentOptions.map((name) => (
+                    <option key={name} value={name}>
+                      {name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-2">
+                <Label>Status</Label>
+                <select
+                  className="flex h-10 w-full min-w-0 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  value={exportStatus}
+                  onChange={(e) => setExportStatus(e.target.value)}
+                >
+                  <option value="all">All statuses</option>
+                  <option value="working">Working</option>
+                  <option value="leave">Leave</option>
+                  <option value="absent">Absent</option>
+                </select>
+              </div>
+            </div>
+
+            <Button onClick={handleExportWorkReports} disabled={exportingReports} className="w-full sm:w-auto">
+              {exportingReports ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Preparing…
+                </>
+              ) : (
+                <>
+                  <Download className="h-4 w-4 mr-2" />
+                  Download CSV
+                </>
+              )}
+            </Button>
+          </CardContent>
+        </Card>
+
         {/* Action Buttons */}
-        <div className="flex flex-wrap gap-4 mb-8">
+        <div className="flex flex-wrap gap-3 mb-8">
           <Button onClick={() => setShowEntityForm(!showEntityForm)}>
             <Plus className="h-4 w-4 mr-2" />
             Create Entity

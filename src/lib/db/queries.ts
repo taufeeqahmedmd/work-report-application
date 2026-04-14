@@ -20,6 +20,7 @@ import type {
   Branch,
   Department,
   WorkReport,
+  WorkReportExportRow,
   PasswordResetToken,
   CreateEmployeeInput,
   UpdateEmployeeInput,
@@ -662,6 +663,92 @@ export async function getWorkReports(limit: number = 50, offset: number = 0): Pr
 export async function getWorkReportCount(): Promise<number> {
   const result = await db.select({ count: sql<number>`count(*)` }).from(workReports);
   return Number(result[0].count);
+}
+
+const SUPER_ADMIN_EXPORT_MAX_ROWS = 100_000;
+
+/**
+ * Work reports for super-admin CSV export (joined with employee entity/branch when present).
+ */
+export async function getWorkReportsForSuperAdminExport(filters: {
+  entityId?: number;
+  branchId?: number;
+  department?: string;
+  status?: 'working' | 'leave' | 'absent';
+  startDate?: string;
+  endDate?: string;
+  /** When true, ignore start/end and include all dates (still capped by row limit). */
+  allDates?: boolean;
+}): Promise<WorkReportExportRow[]> {
+  const conditions = [];
+
+  if (!filters.allDates && filters.startDate && filters.endDate) {
+    conditions.push(sql`${workReports.date} >= ${filters.startDate}`);
+    conditions.push(sql`${workReports.date} <= ${filters.endDate}`);
+  }
+
+  if (filters.department) {
+    conditions.push(eq(workReports.department, filters.department));
+  }
+
+  if (filters.status) {
+    conditions.push(eq(workReports.status, filters.status));
+  }
+
+  if (filters.entityId !== undefined) {
+    conditions.push(eq(employees.entityId, filters.entityId));
+  }
+
+  if (filters.branchId !== undefined) {
+    conditions.push(eq(employees.branchId, filters.branchId));
+  }
+
+  const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+
+  const base = db
+    .select({
+      id: workReports.id,
+      employeeId: workReports.employeeId,
+      date: workReports.date,
+      name: workReports.name,
+      email: workReports.email,
+      department: workReports.department,
+      status: workReports.status,
+      workReport: workReports.workReport,
+      onDuty: workReports.onDuty,
+      halfday: workReports.halfday,
+      createdAt: workReports.createdAt,
+      entityName: entities.name,
+      branchName: branches.name,
+    })
+    .from(workReports)
+    .leftJoin(employees, eq(workReports.employeeId, employees.employeeId))
+    .leftJoin(entities, eq(employees.entityId, entities.id))
+    .leftJoin(branches, eq(employees.branchId, branches.id));
+
+  const results = await (whereClause ? base.where(whereClause) : base)
+    .orderBy(desc(workReports.date), desc(workReports.createdAt))
+    .limit(SUPER_ADMIN_EXPORT_MAX_ROWS + 1);
+
+  if (results.length > SUPER_ADMIN_EXPORT_MAX_ROWS) {
+    throw new Error(`Export exceeds ${SUPER_ADMIN_EXPORT_MAX_ROWS} rows. Narrow filters or date range.`);
+  }
+
+  return results.map((row) => ({
+    id: row.id,
+    employeeId: row.employeeId,
+    date: row.date,
+    name: row.name,
+    email: row.email,
+    department: row.department,
+    status: row.status as WorkReport['status'],
+    workReport: row.workReport,
+    onDuty: row.onDuty,
+    halfday: row.halfday,
+    createdAt: toISOString(row.createdAt),
+    entityName: row.entityName ?? null,
+    branchName: row.branchName ?? null,
+  }));
 }
 
 /**

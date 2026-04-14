@@ -2,7 +2,7 @@ import { WorkReportForm } from '@/components/work-report-form';
 
 export default function WorkReportPage() {
   return (
-    <div className="min-h-screen pt-14">
+    <div className="min-h-screen pt-16">
       <div className="container py-12 px-4 md:px-6">
         <div className="max-w-2xl mx-auto">
           <div className="text-center mb-8">

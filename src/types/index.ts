@@ -88,6 +88,12 @@ export interface WorkReport {
   createdAt: string;
 }
 
+/** Super-admin CSV export row (employee org columns from join) */
+export interface WorkReportExportRow extends WorkReport {
+  entityName: string | null;
+  branchName: string | null;
+}
+
 // Password reset token type
 export interface PasswordResetToken {
   id: number;

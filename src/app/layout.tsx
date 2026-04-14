@@ -61,7 +61,7 @@ export default function RootLayout({
         <link rel="icon" type="image/png" sizes="32x32" href="/icons/logo_96x96.png" />
         <link rel="icon" type="image/png" sizes="16x16" href="/icons/logo_72x72.png" />
       </head>
-      <body className={`${inter.variable} ${syncopate.variable} ${jetbrainsMono.variable} font-sans antialiased min-h-screen bg-background`}>
+      <body className={`${inter.variable} ${syncopate.variable} ${jetbrainsMono.variable} font-sans antialiased min-h-screen bg-background overflow-x-hidden`}>
         <ThemeProvider
           attribute="class"
           defaultTheme="light"

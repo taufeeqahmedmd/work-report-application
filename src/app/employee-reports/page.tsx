@@ -638,8 +638,8 @@ export default function EmployeeReportsPage() {
             <div className="mb-6 p-5 rounded-2xl bg-card border shadow-sm">
               <div className="space-y-4">
                 {/* Search Bar */}
-                <div className="flex gap-3">
-                  <div className="flex-1 relative">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-stretch">
+                  <div className="flex-1 relative min-w-0">
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
                       type="text"
@@ -647,20 +647,20 @@ export default function EmployeeReportsPage() {
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                      className="pl-11 h-12 bg-background/50 border-muted-foreground/20 focus:border-primary"
+                      className="pl-11 h-12 w-full min-w-0 bg-background/50 border-muted-foreground/20 focus:border-primary"
                     />
                   </div>
                   <Button 
                     onClick={handleSearch} 
                     disabled={loading} 
-                    className="h-12 px-6 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg shadow-primary/20"
+                    className="h-12 shrink-0 px-6 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg shadow-primary/20"
                   >
                     {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Search className="h-4 w-4 mr-2" /> Search</>}
                   </Button>
                 </div>
                 
                 {/* Filter Row */}
-                <div className="flex flex-wrap items-center gap-3">
+                <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Filter className="h-4 w-4" />
                     <span>Filters:</span>
@@ -683,22 +683,22 @@ export default function EmployeeReportsPage() {
                   </div>
                   
                   {/* Date Range */}
-                  <div className="flex items-center gap-2 bg-muted/30 rounded-lg p-1">
-                    <div className="relative">
-                      <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-2 bg-muted/30 rounded-lg p-2 sm:p-1 w-full sm:w-auto min-w-0">
+                    <div className="relative w-full sm:w-auto min-w-0">
+                      <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
                       <Input
                         type="date"
                         value={dateRange.start}
                         onChange={(e) => handleDateRangeChange(e.target.value, dateRange.end)}
-                        className="h-8 pl-9 w-36 text-sm bg-background border-0"
+                        className="h-9 sm:h-8 pl-9 w-full min-w-0 max-w-full sm:w-36 text-sm bg-background border-0"
                       />
                     </div>
-                    <span className="text-xs text-muted-foreground">to</span>
+                    <span className="text-xs text-muted-foreground hidden sm:inline text-center">to</span>
                       <Input
                         type="date"
                         value={dateRange.end}
                         onChange={(e) => handleDateRangeChange(dateRange.start, e.target.value)}
-                      className="h-8 w-36 text-sm bg-background border-0"
+                      className="h-9 sm:h-8 w-full min-w-0 max-w-full sm:w-36 text-sm bg-background border-0"
                       />
                   </div>
                   
@@ -801,12 +801,14 @@ export default function EmployeeReportsPage() {
 
                   {/* View Mode Toggle */}
                   {isManager && (
-                    <div className="flex items-center justify-between mb-6">
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Sparkles className="h-4 w-4" />
-                        <span>Showing {reports.length} reports from {getShortDateIST(dateRange.start)} to {getShortDateIST(dateRange.end)}</span>
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6">
+                      <div className="flex items-start sm:items-center gap-2 text-sm text-muted-foreground min-w-0">
+                        <Sparkles className="h-4 w-4 shrink-0 mt-0.5 sm:mt-0" />
+                        <span className="break-words">
+                          Showing {reports.length} reports from {getShortDateIST(dateRange.start)} to {getShortDateIST(dateRange.end)}
+                        </span>
                       </div>
-                      <div className="flex items-center bg-muted/50 rounded-lg p-1">
+                      <div className="flex items-center bg-muted/50 rounded-lg p-1 shrink-0 self-start sm:self-auto">
                         <button
                           onClick={() => setViewMode('scrum')}
                           className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${

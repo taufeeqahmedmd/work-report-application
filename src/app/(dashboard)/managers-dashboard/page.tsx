@@ -460,7 +460,7 @@ export default function ManagersDashboardPage() {
   const reportsByDepartment = groupReportsByDepartment(filteredReports);
 
   return (
-    <div className="min-h-screen pt-14 bg-muted/20">
+    <div className="min-h-screen pt-16 bg-muted/20">
       <div className="container py-6 px-4 md:px-6">
         <div className="max-w-full mx-auto">
           {/* Header */}

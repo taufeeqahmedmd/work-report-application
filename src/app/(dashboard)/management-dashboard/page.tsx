@@ -268,7 +268,7 @@ export default function ManagementDashboardPage() {
     : 0;
 
   return (
-    <div className="min-h-screen pt-14 bg-gradient-to-br from-background via-background to-muted/20">
+    <div className="min-h-screen pt-16 bg-gradient-to-br from-background via-background to-muted/20">
       <div className="container py-8 px-4 md:px-6">
         <div className="max-w-full mx-auto space-y-6">
           
