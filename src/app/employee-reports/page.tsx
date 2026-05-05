@@ -6,12 +6,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { 
   Loader2, Search, FileText, Briefcase, Coffee, ArrowRight, Lock, Pencil, X, Check, 
-  ChevronDown, Filter, Users, Calendar, AlertCircle, Shield, LayoutGrid, List, UserCheck,
+  ChevronDown, Filter, Users, Calendar, AlertCircle, Shield, LayoutGrid, List, UserCheck, RotateCcw,
   TrendingUp, Clock, CheckCircle2, CalendarDays, Building2, Sparkles
 } from 'lucide-react';
 import { toast } from 'sonner';
 import type { WorkReport, SessionUser, WorkStatus, EditPermissions, Department, Holiday } from '@/types';
-import { getISTTodayRange, getISTTodayDateString, getShortDayIST, getShortDateIST, formatDateForDisplay, convertUTCToISTDate } from '@/lib/date';
+import { getISTDateRangeFromDays, getISTTodayDateString, getShortDayIST, getShortDateIST, formatDateForDisplay, convertUTCToISTDate } from '@/lib/date';
 import { logger } from '@/lib/logger';
 import { WorkReportCalendar } from '@/components/work-report-calendar';
 import { canMarkAttendance } from '@/lib/permissions';
@@ -29,8 +29,8 @@ export default function EmployeeReportsPage() {
   const [searched, setSearched] = useState(false);
   const [error, setError] = useState('');
   
-  const getDefaultDates = useCallback(() => getISTTodayRange(), []);
-  const [dateRange, setDateRange] = useState(() => getISTTodayRange());
+  const getDefaultDates = useCallback(() => getISTDateRangeFromDays(7), []);
+  const [dateRange, setDateRange] = useState(() => getISTDateRangeFromDays(7));
 
   // Edit state
   const [editingReport, setEditingReport] = useState<WorkReport | null>(null);
@@ -224,7 +224,7 @@ export default function EmployeeReportsPage() {
     setSearchQuery('');
     setSelectedDepartment('all');
     setStatusFilter('all');
-    const todayDates = getISTTodayRange();
+    const todayDates = getISTDateRangeFromDays(7);
     setDateRange(todayDates);
     fetchReports('', 'all', todayDates.start, todayDates.end);
   }, [fetchReports]);
@@ -377,7 +377,7 @@ export default function EmployeeReportsPage() {
     
     return (
       <div
-        onClick={() => !compact && toggleExpand(report.id)}
+        onClick={() => toggleExpand(report.id)}
         className={`group relative overflow-hidden rounded-xl transition-all duration-300 ${
           compact ? 'p-3' : 'p-4'
         } ${
@@ -715,10 +715,10 @@ export default function EmployeeReportsPage() {
                       />
                   </div>
                   
-                  {/* Clear Filters */}
+                  {/* Reset Filters */}
                   {(searchQuery || selectedDepartment !== 'all' || statusFilter !== 'all') && (
                     <Button variant="ghost" size="sm" onClick={handleClearFilters} className="h-9 text-muted-foreground hover:text-foreground">
-                      <X className="h-3.5 w-3.5 mr-1.5" /> Clear
+                      <RotateCcw className="h-3.5 w-3.5 mr-1.5" /> Reset
                     </Button>
                   )}
                 </div>

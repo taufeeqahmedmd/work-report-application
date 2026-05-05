@@ -4,8 +4,10 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Loader2, Users, Calendar, Briefcase, Coffee, ChevronLeft, ChevronRight, Filter, X, TrendingUp, Building2, Check, Clock, Building } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Input } from '@/components/ui/input';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { logger } from '@/lib/logger';
-import type { Entity, Branch, Department } from '@/types';
+import type { Entity, Branch, Department, WorkReport } from '@/types';
 
 interface EmployeeReportStatus {
   employeeId: string;
@@ -62,6 +64,13 @@ export default function ManagementDashboardPage() {
   const [selectedEntity, setSelectedEntity] = useState<string>('all');
   const [selectedBranch, setSelectedBranch] = useState<string>('all');
   const [selectedDepartment, setSelectedDepartment] = useState<string>('all');
+  const [cardStartDate, setCardStartDate] = useState('');
+  const [cardEndDate, setCardEndDate] = useState('');
+  const [reportDialogOpen, setReportDialogOpen] = useState(false);
+  const [reportDialogLoading, setReportDialogLoading] = useState(false);
+  const [selectedReport, setSelectedReport] = useState<WorkReport | null>(null);
+  const [selectedReportMeta, setSelectedReportMeta] = useState<{ employeeName: string; date: string } | null>(null);
+  const [reportDialogError, setReportDialogError] = useState('');
 
   const fetchAnalytics = async () => {
     try {
@@ -108,6 +117,16 @@ export default function ManagementDashboardPage() {
   useEffect(() => {
     fetchMonthlyStatus();
   }, [fetchMonthlyStatus]);
+
+  useEffect(() => {
+    const today = new Date();
+    const isCurrentMonth = selectedYear === today.getFullYear() && selectedMonth === today.getMonth() + 1;
+    const defaultDate = isCurrentMonth
+      ? `${selectedYear}-${String(selectedMonth).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
+      : `${selectedYear}-${String(selectedMonth).padStart(2, '0')}-01`;
+    setCardStartDate(defaultDate);
+    setCardEndDate(defaultDate);
+  }, [selectedYear, selectedMonth]);
 
   // Refresh data when window regains focus (in case holidays were updated in another tab)
   useEffect(() => {
@@ -184,24 +203,68 @@ export default function ManagementDashboardPage() {
   // Calculate department stats from monthly status data
   const monthlyDepartmentStats = useMemo(() => {
     if (!statusData) return [];
-    
-    const deptMap: Record<string, { working: number; leave: number; total: number }> = {};
-    
+
+    const [rangeStart, rangeEnd] = cardStartDate && cardEndDate
+      ? [cardStartDate, cardEndDate]
+      : [null, null];
+
+    const deptMap: Record<string, { working: number; leave: number; missing: number; totalExpected: number }> = {};
+
     statusData.employees.forEach(employee => {
       if (!deptMap[employee.department]) {
-        deptMap[employee.department] = { working: 0, leave: 0, total: 0 };
+        deptMap[employee.department] = { working: 0, leave: 0, missing: 0, totalExpected: 0 };
       }
-      deptMap[employee.department].working += employee.submittedCount;
-      // Count leaves from daily status
-      const leaveCount = Object.values(employee.dailyStatus).filter(s => s === 'leave').length;
-      deptMap[employee.department].leave += leaveCount;
-      deptMap[employee.department].total += employee.submittedCount + leaveCount;
+
+      Object.entries(employee.dailyStatus).forEach(([date, dayStatus]) => {
+        if (rangeStart && rangeEnd && (date < rangeStart || date > rangeEnd)) return;
+        if (dayStatus === 'future' || dayStatus === 'sunday') return;
+
+        deptMap[employee.department].totalExpected += 1;
+
+        if (dayStatus === 'submitted') {
+          deptMap[employee.department].working += 1;
+        } else if (dayStatus === 'leave') {
+          deptMap[employee.department].leave += 1;
+        } else if (dayStatus === 'not_submitted') {
+          deptMap[employee.department].missing += 1;
+        }
+      });
     });
-    
+
     return Object.entries(deptMap)
       .map(([department, stats]) => ({ department, ...stats }))
       .sort((a, b) => a.department.localeCompare(b.department));
-  }, [statusData]);
+  }, [statusData, cardStartDate, cardEndDate]);
+
+  const handleOpenReportDialog = useCallback(async (employee: EmployeeReportStatus, date: string) => {
+    setReportDialogOpen(true);
+    setReportDialogLoading(true);
+    setReportDialogError('');
+    setSelectedReport(null);
+    setSelectedReportMeta({ employeeName: employee.name, date });
+
+    try {
+      const response = await fetch(`/api/work-reports?employeeId=${encodeURIComponent(employee.employeeId)}`);
+      const result = await response.json();
+
+      if (!result.success || !result.data?.reports) {
+        setReportDialogError(result.error || 'Unable to fetch report details');
+        return;
+      }
+
+      const report = (result.data.reports as WorkReport[]).find(r => r.date === date);
+      if (!report) {
+        setReportDialogError('No report details found for this date');
+        return;
+      }
+
+      setSelectedReport(report);
+    } catch {
+      setReportDialogError('Failed to fetch report details');
+    } finally {
+      setReportDialogLoading(false);
+    }
+  }, []);
 
   // Get department tag color
   const getDepartmentTagColor = (department: string) => {
@@ -229,13 +292,22 @@ export default function ManagementDashboardPage() {
       .slice(0, 2);
   };
 
-  const getStatusCell = (status: 'submitted' | 'leave' | 'not_submitted' | 'sunday' | 'future') => {
+  const getStatusCell = (
+    employee: EmployeeReportStatus,
+    dateStr: string,
+    status: 'submitted' | 'leave' | 'not_submitted' | 'sunday' | 'future'
+  ) => {
     switch (status) {
       case 'submitted':
         return (
-          <div className="w-7 h-7 sm:w-8 sm:h-8 rounded flex items-center justify-center" title="Submitted">
+          <button
+            type="button"
+            onClick={() => handleOpenReportDialog(employee, dateStr)}
+            className="w-7 h-7 sm:w-8 sm:h-8 rounded flex items-center justify-center hover:bg-emerald-500/10 transition-colors"
+            title="Submitted (click to view report)"
+          >
             <Check className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-emerald-600 dark:text-emerald-400" />
-          </div>
+          </button>
         );
       case 'leave':
         return (
@@ -359,16 +431,34 @@ export default function ManagementDashboardPage() {
                 </h3>
                 <span className="text-xs text-muted-foreground">{MONTH_NAMES[selectedMonth - 1]} {selectedYear}</span>
               </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-xs text-muted-foreground">Card Date Range:</span>
+                <Input
+                  type="date"
+                  value={cardStartDate}
+                  onChange={(e) => setCardStartDate(e.target.value)}
+                  className="h-8 w-40 text-xs"
+                />
+                <span className="text-xs text-muted-foreground">to</span>
+                <Input
+                  type="date"
+                  value={cardEndDate}
+                  onChange={(e) => setCardEndDate(e.target.value)}
+                  className="h-8 w-40 text-xs"
+                />
+              </div>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
                 {monthlyDepartmentStats.map((dept) => {
-                  const rate = dept.total > 0 ? Math.round((dept.working / dept.total) * 100) : 0;
+                  const rate = dept.totalExpected > 0 ? Math.round(((dept.working + dept.leave) / dept.totalExpected) * 100) : 0;
                   const circumference = 2 * Math.PI * 20;
                   const strokeDashoffset = circumference - (rate / 100) * circumference;
+                  const isActive = selectedDepartment === dept.department;
                   
                   return (
-                    <div 
+                    <button 
                       key={dept.department} 
-                      className="bg-card border rounded-xl p-4 hover:shadow-md transition-all hover:border-primary/20"
+                      onClick={() => setSelectedDepartment(dept.department)}
+                      className={`bg-card border rounded-xl p-4 hover:shadow-md transition-all hover:border-primary/20 text-left ${isActive ? 'ring-2 ring-primary/40 border-primary/30' : ''}`}
                     >
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex-1 min-w-0">
@@ -376,7 +466,7 @@ export default function ManagementDashboardPage() {
                             {dept.department}
                           </h4>
                           <p className="text-xs text-muted-foreground mt-0.5">
-                            {dept.total} reports
+                            {dept.totalExpected} expected
                           </p>
                         </div>
                         {/* Circular Progress */}
@@ -423,8 +513,13 @@ export default function ManagementDashboardPage() {
                           <span className="text-muted-foreground">Leave</span>
                           <span className="font-semibold text-amber-600">{dept.leave}</span>
                         </div>
+                        <div className="flex items-center gap-1.5">
+                          <span className="w-2 h-2 rounded-full bg-rose-500"></span>
+                          <span className="text-muted-foreground">Missing</span>
+                          <span className="font-semibold text-rose-600">{dept.missing}</span>
+                        </div>
                       </div>
-                    </div>
+                    </button>
                   );
                 })}
               </div>
@@ -601,7 +696,7 @@ export default function ManagementDashboardPage() {
                               {/* Daily Status Cells */}
                               {daysArray.map(({ dateStr }) => (
                                 <td key={dateStr} className={`py-2 sm:py-3 px-1 sm:px-2 text-center align-middle ${rowBgClass}`}>
-                                  {getStatusCell(employee.dailyStatus[dateStr])}
+                                  {getStatusCell(employee, dateStr, employee.dailyStatus[dateStr])}
                                 </td>
                               ))}
                               
@@ -637,6 +732,42 @@ export default function ManagementDashboardPage() {
           </div>
         </div>
       </div>
+      <Dialog open={reportDialogOpen} onOpenChange={setReportDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Work Report Details</DialogTitle>
+            <DialogDescription>
+              {selectedReportMeta ? `${selectedReportMeta.employeeName} • ${selectedReportMeta.date}` : 'Report'}
+            </DialogDescription>
+          </DialogHeader>
+          {reportDialogLoading ? (
+            <div className="py-6 flex items-center justify-center">
+              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+            </div>
+          ) : reportDialogError ? (
+            <p className="text-sm text-destructive">{reportDialogError}</p>
+          ) : selectedReport ? (
+            <div className="space-y-3 text-sm">
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Employee ID</span>
+                <span className="font-medium">{selectedReport.employeeId}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Status</span>
+                <span className="font-medium">{selectedReport.status}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Department</span>
+                <span className="font-medium">{selectedReport.department}</span>
+              </div>
+              <div className="pt-2 border-t">
+                <p className="text-muted-foreground mb-1">Work Report</p>
+                <p className="whitespace-pre-wrap">{selectedReport.workReport || 'No details provided'}</p>
+              </div>
+            </div>
+          ) : null}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

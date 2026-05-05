@@ -11,6 +11,7 @@ const protectedRoutes = [
   '/management-dashboard',
   '/managers-dashboard',
   '/employee-reports',
+  '/team-report',
   '/employee-dashboard',
   '/holidays',
   '/mark-attendance',
@@ -77,6 +78,7 @@ const ROUTE_TO_PAGE_ACCESS: Record<string, keyof PageAccess> = {
   '/employee-dashboard': 'dashboard',
   '/work-report': 'submit_report',
   '/employee-reports': 'employee_reports',
+  '/team-report': 'employee_reports',
   '/management-dashboard': 'management_dashboard',
   '/managers-dashboard': 'management_dashboard', // Uses same permission as management dashboard
   '/admin': 'admin_dashboard',
@@ -125,6 +127,11 @@ function hasRouteAccess(pathname: string, pageAccess: PageAccess): boolean {
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  // Managers dashboard route is deprecated; use team-report instead.
+  if (pathname.startsWith('/managers-dashboard')) {
+    return NextResponse.redirect(new URL('/team-report', request.url));
+  }
 
   // Check if this is a protected route
   const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route));

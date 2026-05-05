@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -31,9 +31,6 @@ export function WorkReportForm() {
   // Date selection - default to today (IST), max is today (no future dates)
   const today = getISTTodayDateString();
   const [selectedDate, setSelectedDate] = useState(today);
-  const [showDatePicker, setShowDatePicker] = useState(false);
-  const dateInputRef = useRef<HTMLInputElement>(null);
-  const calendarButtonRef = useRef<HTMLButtonElement>(null);
   
   // Format selected date for display (IST)
   const formattedDate = getFullDateIST(selectedDate);
@@ -68,43 +65,6 @@ export function WorkReportForm() {
       handleEmployeeLookup();
     }
   }, [sessionLoading, session, employeeId]);
-  
-  // Handle calendar icon click
-  const handleCalendarClick = () => {
-    const calendarBtn = calendarButtonRef.current;
-    const dateInput = dateInputRef.current;
-    if (!calendarBtn || !dateInput) return;
-    
-    // Get the position of the calendar button
-    const rect = calendarBtn.getBoundingClientRect();
-    
-    // Position the hidden input near the calendar button
-    dateInput.style.position = 'fixed';
-    dateInput.style.left = `${rect.left}px`;
-    dateInput.style.top = `${rect.bottom + 5}px`;
-    dateInput.style.width = '1px';
-    dateInput.style.height = '1px';
-    dateInput.style.opacity = '0';
-    dateInput.style.pointerEvents = 'auto';
-    dateInput.style.zIndex = '9999';
-    
-    // Try to use showPicker() if available (modern browsers)
-    if ('showPicker' in dateInput && typeof dateInput.showPicker === 'function') {
-      dateInput.showPicker();
-    } else {
-      // Fallback: click the input to open the picker
-      dateInput.focus();
-      dateInput.click();
-    }
-    
-    // Reset position after a delay
-    setTimeout(() => {
-      if (dateInputRef.current) {
-        dateInputRef.current.style.position = 'absolute';
-        dateInputRef.current.style.pointerEvents = 'none';
-      }
-    }, 100);
-  };
   
   const handleDateChange = async (date: string) => {
     // Prevent future dates
@@ -328,32 +288,18 @@ export function WorkReportForm() {
               {session ? `Welcome, ${session.name}` : formattedDate}
             </p>
           </div>
-          <div className="relative flex-shrink-0">
-            <button
-              ref={calendarButtonRef}
-              type="button"
-              onClick={handleCalendarClick}
-              className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-              title="Click to select date"
-            >
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <Calendar className="h-4 w-4" />
               <span>{isToday ? 'Today' : 'Past Date'}</span>
-            </button>
-            {/* Hidden Date Input - positioned dynamically on click */}
+            </div>
             <Input
-              ref={dateInputRef}
               id="reportDate"
               type="date"
               value={selectedDate}
               onChange={(e) => handleDateChange(e.target.value)}
               max={today}
-              className="absolute opacity-0 pointer-events-none"
-              style={{ 
-                right: 0,
-                top: '100%',
-                width: '1px',
-                height: '1px'
-              }}
+              className="h-8 w-36 text-xs"
             />
           </div>
         </div>

@@ -120,13 +120,13 @@ export function Navbar() {
 
   // View Reports link - based on pageAccess
   const viewReportsLabel = user?.role === 'manager' ? 'Team Reports' : 'Employee Reports';
-  const viewReportsLink = { href: '/employee-reports', label: viewReportsLabel, icon: BarChart3 };
+  const viewReportsHref = user?.role === 'manager' ? '/team-report' : '/employee-reports';
+  const viewReportsLink = { href: viewReportsHref, label: viewReportsLabel, icon: BarChart3 };
   const showViewReports = user && pageAccess?.employee_reports === true;
 
   // Admin links - based on pageAccess
   const adminLinks = [
     { href: '/management-dashboard', label: 'Management Dashboard', icon: BarChart3, accessKey: 'management_dashboard' as keyof PageAccess },
-    { href: '/managers-dashboard', label: 'Managers Dashboard', icon: BarChart3, accessKey: 'management_dashboard' as keyof PageAccess },
     { href: '/admin', label: 'Admin Dashboard', icon: LayoutDashboard, accessKey: 'admin_dashboard' as keyof PageAccess },
     { href: '/super-admin', label: 'Super Admin Dashboard', icon: LayoutDashboard, accessKey: 'super_admin_dashboard' as keyof PageAccess },
   ];

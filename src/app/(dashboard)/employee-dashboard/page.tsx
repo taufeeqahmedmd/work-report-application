@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { 
   Loader2, 
@@ -25,7 +26,8 @@ import {
   ArrowRight,
   Lock,
   Sparkles,
-  Mail
+  Mail,
+  RotateCcw
 } from 'lucide-react';
 import { toast } from 'sonner';
 import Link from 'next/link';
@@ -50,6 +52,16 @@ export default function EmployeeDashboardPage() {
 
   // Expanded report state
   const [expandedReportId, setExpandedReportId] = useState<number | null>(null);
+  const [dateRange, setDateRange] = useState<{ start: string; end: string }>(() => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    return {
+      start: `${year}-${month}-01`,
+      end: `${year}-${month}-${day}`,
+    };
+  });
 
   // Check if user can edit their own reports
   const canEditOwnReports = editPermissions?.employee_can_edit_own_reports || false;
@@ -97,7 +109,12 @@ export default function EmployeeDashboardPage() {
     
     setLoading(true);
     try {
-      const response = await fetch(`/api/work-reports?employeeId=${session.employeeId}`);
+      const params = new URLSearchParams({
+        employeeId: session.employeeId,
+        startDate: dateRange.start,
+        endDate: dateRange.end,
+      });
+      const response = await fetch(`/api/work-reports?${params.toString()}`);
       const data = await response.json();
 
       if (data.success) {
@@ -110,7 +127,7 @@ export default function EmployeeDashboardPage() {
     } finally {
       setLoading(false);
     }
-  }, [session?.employeeId]);
+  }, [session?.employeeId, dateRange.start, dateRange.end]);
 
   // Fetch reports when session is loaded
   useEffect(() => {
@@ -118,6 +135,21 @@ export default function EmployeeDashboardPage() {
       fetchReports();
     }
   }, [session?.employeeId, fetchReports]);
+
+  const handleDateRangeChange = useCallback((start: string, end: string) => {
+    setDateRange({ start, end });
+  }, []);
+
+  const handleResetDateFilter = useCallback(() => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    setDateRange({
+      start: `${year}-${month}-01`,
+      end: `${year}-${month}-${day}`,
+    });
+  }, []);
 
   // Fetch holidays
   useEffect(() => {
@@ -453,6 +485,37 @@ export default function EmployeeDashboardPage() {
                   {reports.length}<span className="hidden sm:inline"> reports</span>
                 </span>
               )}
+            </div>
+
+            <div className="px-3 sm:px-4 py-3 border-b bg-background/60">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+                <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
+                  <Calendar className="h-4 w-4" />
+                  <span>Date Range</span>
+                </div>
+                <Input
+                  type="date"
+                  value={dateRange.start}
+                  onChange={(e) => handleDateRangeChange(e.target.value, dateRange.end)}
+                  className="h-8 sm:h-9 w-full sm:w-40 text-xs sm:text-sm"
+                />
+                <span className="text-xs text-muted-foreground hidden sm:inline">to</span>
+                <Input
+                  type="date"
+                  value={dateRange.end}
+                  onChange={(e) => handleDateRangeChange(dateRange.start, e.target.value)}
+                  className="h-8 sm:h-9 w-full sm:w-40 text-xs sm:text-sm"
+                />
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleResetDateFilter}
+                  className="h-8 sm:h-9 text-muted-foreground hover:text-foreground sm:ml-auto"
+                >
+                  <RotateCcw className="h-3.5 w-3.5 mr-1.5" />
+                  Reset
+                </Button>
+              </div>
             </div>
             
             <div className="p-2 sm:p-3">
