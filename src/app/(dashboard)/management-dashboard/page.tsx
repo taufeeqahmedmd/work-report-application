@@ -16,7 +16,6 @@ import {
   Plus,
   ChevronLeft,
   ChevronRight,
-  Bolt,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
@@ -116,6 +115,14 @@ export default function ManagementDashboardPage() {
     }
   };
 
+  useEffect(() => {
+    setSelectedBranch('all');
+  }, [selectedEntity]);
+
+  useEffect(() => {
+    setSelectedDepartment('all');
+  }, [selectedEntity, selectedBranch]);
+
   const filteredBranches = useMemo(() => {
     if (!statusData) return [];
     if (selectedEntity === 'all') return statusData.branches;
@@ -201,16 +208,10 @@ export default function ManagementDashboardPage() {
   }, [statusData]);
 
   const heatmapEmployees = useMemo(() => {
-    return [...employees].sort((a, b) => b.submittedCount - a.submittedCount).slice(0, 3);
+    return [...employees].sort((a, b) => b.submittedCount - a.submittedCount);
   }, [employees]);
 
-  const heatmapDays = useMemo(() => daysArray.slice(0, 14), [daysArray]);
-
-  const velocityBars = useMemo(() => {
-    const top = departmentPerformance.slice(0, 6);
-    if (top.length === 0) return [20, 28, 36, 44, 52, 48];
-    return top.map((d) => Math.max(16, Math.round((d.rate / 100) * 56)));
-  }, [departmentPerformance]);
+  const heatmapDays = useMemo(() => daysArray, [daysArray]);
 
   const getDotClass = (status: EmployeeReportStatus['dailyStatus'][string]) => {
     if (status === 'submitted') return 'bg-emerald-500';
@@ -330,6 +331,83 @@ export default function ManagementDashboardPage() {
             </div>
 
             <section className="rounded-md border bg-card p-4">
+              <div className="grid gap-3 lg:grid-cols-[auto_1fr] lg:items-end">
+                <div>
+                  <p className="text-[11px] uppercase tracking-[0.06em] text-muted-foreground mb-1">Reporting Month</p>
+                  <div className="inline-flex items-center rounded-sm border">
+                    <button
+                      onClick={handlePrevMonth}
+                      className="h-9 w-9 inline-flex items-center justify-center border-r hover:bg-muted/50"
+                      aria-label="Previous month"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </button>
+                    <div className="px-3 text-sm font-medium min-w-[150px] text-center">
+                      {MONTH_NAMES[selectedMonth - 1]} {selectedYear}
+                    </div>
+                    <button
+                      onClick={handleNextMonth}
+                      className="h-9 w-9 inline-flex items-center justify-center border-l hover:bg-muted/50"
+                      aria-label="Next month"
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid gap-2 sm:grid-cols-3">
+                  <div>
+                    <p className="text-[11px] uppercase tracking-[0.06em] text-muted-foreground mb-1">Entity</p>
+                    <select
+                      value={selectedEntity}
+                      onChange={(e) => setSelectedEntity(e.target.value)}
+                      className="h-9 w-full rounded-sm border bg-background px-3 text-sm"
+                    >
+                      <option value="all">All Entities</option>
+                      {statusData.entities.map((entity) => (
+                        <option key={entity.id} value={String(entity.id)}>
+                          {entity.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <p className="text-[11px] uppercase tracking-[0.06em] text-muted-foreground mb-1">Branch</p>
+                    <select
+                      value={selectedBranch}
+                      onChange={(e) => setSelectedBranch(e.target.value)}
+                      className="h-9 w-full rounded-sm border bg-background px-3 text-sm"
+                    >
+                      <option value="all">All Branches</option>
+                      {filteredBranches.map((branch) => (
+                        <option key={branch.id} value={String(branch.id)}>
+                          {branch.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <p className="text-[11px] uppercase tracking-[0.06em] text-muted-foreground mb-1">Department</p>
+                    <select
+                      value={selectedDepartment}
+                      onChange={(e) => setSelectedDepartment(e.target.value)}
+                      className="h-9 w-full rounded-sm border bg-background px-3 text-sm"
+                    >
+                      <option value="all">All Departments</option>
+                      {filteredDepartments.map((department) => (
+                        <option key={department.id} value={department.name}>
+                          {department.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <section className="rounded-md border bg-card p-4">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-2xl font-semibold tracking-[-0.01em]">Department Performance</h2>
                 <span className="text-xs uppercase tracking-[0.06em] text-muted-foreground">View Insights</span>
@@ -374,14 +452,14 @@ export default function ManagementDashboardPage() {
                 </div>
                 <div className="flex items-center gap-3 text-xs text-muted-foreground">
                   <span className="inline-flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500" />Submitted</span>
-                  <span className="inline-flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-slate-300" />Absent</span>
-                  <span className="inline-flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-yellow-500" />Pending</span>
+                  <span className="inline-flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-yellow-500" />Leave</span>
+                  <span className="inline-flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-slate-300" />Not Submitted</span>
                   <span className="inline-flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-slate-200" />Off</span>
                 </div>
               </div>
 
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[760px] text-sm">
+              <div className="overflow-auto max-h-[70vh]">
+                <table className="w-full min-w-[1100px] text-sm">
                   <thead>
                     <tr className="text-muted-foreground text-xs border-b">
                       <th className="text-left py-2 px-2 uppercase tracking-[0.06em]">Employee Identity</th>
@@ -436,51 +514,6 @@ export default function ManagementDashboardPage() {
               </div>
             </section>
 
-            <section className="grid gap-4 lg:grid-cols-[1fr_220px]">
-              <div className="rounded-md border bg-card p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <div>
-                    <h2 className="text-2xl font-semibold tracking-[-0.01em]">Compliance Velocity</h2>
-                    <p className="text-sm text-muted-foreground">Trailing 30-day submission momentum</p>
-                  </div>
-                  <span className="text-xs uppercase tracking-[0.06em] text-muted-foreground">Last 6 Months</span>
-                </div>
-                <div className="h-44 flex items-end gap-2 border-b pb-4">
-                  {velocityBars.map((h, idx) => (
-                    <div key={idx} className="flex-1 rounded-t-sm bg-primary" style={{ height: `${h * 2}px` }} />
-                  ))}
-                </div>
-                <div className="grid grid-cols-3 gap-3 mt-3 text-sm">
-                  <div>
-                    <p className="text-xs uppercase tracking-[0.06em] text-muted-foreground">Peak Time</p>
-                    <p className="font-semibold">09:42 AM</p>
-                  </div>
-                  <div>
-                    <p className="text-xs uppercase tracking-[0.06em] text-muted-foreground">Avg Delay</p>
-                    <p className="font-semibold">14.2 Min</p>
-                  </div>
-                  <div>
-                    <p className="text-xs uppercase tracking-[0.06em] text-muted-foreground">Entity Sync</p>
-                    <p className="font-semibold text-emerald-600">Optimal</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="rounded-md border bg-primary text-primary-foreground p-4 flex flex-col">
-                <div className="flex items-center justify-between mb-4">
-                  <Bolt className="h-5 w-5" />
-                  <Plus className="h-4 w-4" />
-                </div>
-                <h3 className="text-xl font-semibold mb-2">Core Health</h3>
-                <p className="text-sm text-primary-foreground/80 mb-6">
-                  Infrastructure status is nominal. Reporting engines synchronized across all nodes.
-                </p>
-                <div className="mt-auto pt-4 border-t border-primary-foreground/20">
-                  <p className="text-xs uppercase tracking-[0.06em] text-primary-foreground/70">Network Latency</p>
-                  <p className="text-4xl font-semibold">42ms</p>
-                </div>
-              </div>
-            </section>
           </main>
         </div>
       </div>
