@@ -91,6 +91,7 @@ export function Navbar() {
 
   // Board members only see Management Dashboard - no other nav links
   const isBoardMember = user?.role === 'boardmember';
+  const isEmployeeUser = user?.role === 'employee';
 
   // Build nav links based on pageAccess permissions
   type NavLink = {
@@ -157,6 +158,7 @@ export function Navbar() {
         </Link>
 
         {/* Desktop Navigation */}
+        {!isEmployeeUser && (
         <div className="hidden md:flex md:items-center md:gap-1">
           {/* Board members don't see regular nav links */}
           {!isBoardMember && navLinks.map((link) => {
@@ -259,6 +261,7 @@ export function Navbar() {
             )
           )}
         </div>
+        )}
 
         {/* Right Side */}
         <div className="flex items-center gap-2">
@@ -267,57 +270,70 @@ export function Navbar() {
           {loading ? (
             <div className="h-9 w-9 rounded-lg bg-muted animate-pulse" />
           ) : user ? (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="h-9 gap-2 px-2 hover:bg-muted">
-                  <Avatar className="h-7 w-7 transition-transform hover:scale-105">
-                    <AvatarFallback className="bg-foreground text-background text-xs font-medium">
-                      {getInitials(user.name)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <span className="hidden sm:inline-block text-sm font-medium">
-                    {user.name.split(' ')[0]}
-                  </span>
-                  <ChevronDown className="h-3 w-3 text-muted-foreground" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-56 animate-scale-in" align="end">
-                <DropdownMenuLabel className="font-normal">
-                  <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium">{user.name}</p>
-                    <p className="text-xs text-muted-foreground truncate">{user.email}</p>
-                    <span className={`inline-flex w-fit text-xs px-2 py-0.5 rounded font-medium mt-1 ${
-                      user.role === 'superadmin' 
-                        ? 'role-superadmin' 
-                                    : user.role === 'admin' 
-                          ? 'role-admin' 
-                          : user.role === 'boardmember'
-                            ? 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300'
-                            : user.role === 'teamhead'
-                              ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300'
-                            : 'role-employee'
-                    }`}>
-                      {user.role === 'boardmember' ? 'Board Member' : user.role === 'teamhead' ? 'Team Head' : user.role}
+            isEmployeeUser ? (
+              <div className="flex items-center gap-2 px-1">
+                <Avatar className="h-7 w-7">
+                  <AvatarFallback className="bg-foreground text-background text-xs font-medium">
+                    {getInitials(user.name)}
+                  </AvatarFallback>
+                </Avatar>
+                <span className="hidden sm:inline-block text-sm font-medium">
+                  {user.name.split(' ')[0]}
+                </span>
+              </div>
+            ) : (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="h-9 gap-2 px-2 hover:bg-muted">
+                    <Avatar className="h-7 w-7 transition-transform hover:scale-105">
+                      <AvatarFallback className="bg-foreground text-background text-xs font-medium">
+                        {getInitials(user.name)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="hidden sm:inline-block text-sm font-medium">
+                      {user.name.split(' ')[0]}
                     </span>
-                  </div>
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem asChild className="cursor-pointer">
-                  <Link href="/profile">
-                    <User className="mr-2 h-4 w-4" />
-                    Profile
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem 
-                  onClick={handleLogout} 
-                  className="cursor-pointer text-destructive focus:text-destructive focus:bg-destructive/10"
-                >
-                  <LogOut className="mr-2 h-4 w-4" />
-                  Log out
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+                    <ChevronDown className="h-3 w-3 text-muted-foreground" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-56 animate-scale-in" align="end">
+                  <DropdownMenuLabel className="font-normal">
+                    <div className="flex flex-col space-y-1">
+                      <p className="text-sm font-medium">{user.name}</p>
+                      <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                      <span className={`inline-flex w-fit text-xs px-2 py-0.5 rounded font-medium mt-1 ${
+                        user.role === 'superadmin' 
+                          ? 'role-superadmin' 
+                                      : user.role === 'admin' 
+                            ? 'role-admin' 
+                            : user.role === 'boardmember'
+                              ? 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300'
+                              : user.role === 'teamhead'
+                                ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300'
+                              : 'role-employee'
+                      }`}>
+                        {user.role === 'boardmember' ? 'Board Member' : user.role === 'teamhead' ? 'Team Head' : user.role}
+                      </span>
+                    </div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild className="cursor-pointer">
+                    <Link href="/profile">
+                      <User className="mr-2 h-4 w-4" />
+                      Profile
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem 
+                    onClick={handleLogout} 
+                    className="cursor-pointer text-destructive focus:text-destructive focus:bg-destructive/10"
+                  >
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Log out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )
           ) : (
             <Button asChild size="sm" className="btn-shine">
               <Link href="/login">Sign in</Link>
@@ -325,6 +341,7 @@ export function Navbar() {
           )}
 
           {/* Mobile Menu */}
+          {!isEmployeeUser && (
           <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
             <SheetTrigger asChild className="md:hidden">
               <Button variant="ghost" size="icon" className="h-9 w-9">
@@ -490,6 +507,7 @@ export function Navbar() {
               </div>
             </SheetContent>
           </Sheet>
+          )}
         </div>
       </div>
     </nav>

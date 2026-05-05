@@ -185,17 +185,11 @@ export default function ProfilePage() {
               <Link href="/employee-dashboard" className="flex items-center gap-3 rounded-sm px-3 py-2 text-xs font-semibold uppercase tracking-[0.06em] text-primary-foreground/80 hover:bg-primary-foreground/8 hover:text-primary-foreground">
                 <User className="h-4 w-4" /> Dashboard
               </Link>
-              <Link href="/employee-reports" className="flex items-center gap-3 rounded-sm px-3 py-2 text-xs font-semibold uppercase tracking-[0.06em] text-primary-foreground/80 hover:bg-primary-foreground/8 hover:text-primary-foreground">
-                <Briefcase className="h-4 w-4" /> Reports
+              <Link href="/work-report" className="flex items-center gap-3 rounded-sm px-3 py-2 text-xs font-semibold uppercase tracking-[0.06em] text-primary-foreground/80 hover:bg-primary-foreground/8 hover:text-primary-foreground">
+                <Briefcase className="h-4 w-4" /> Submit Report
               </Link>
-              <Link href="/manage-team" className="flex items-center gap-3 rounded-sm px-3 py-2 text-xs font-semibold uppercase tracking-[0.06em] text-primary-foreground/80 hover:bg-primary-foreground/8 hover:text-primary-foreground">
-                <Users className="h-4 w-4" /> Team Management
-              </Link>
-              <Link href="/management-dashboard" className="flex items-center gap-3 rounded-sm px-3 py-2 text-xs font-semibold uppercase tracking-[0.06em] text-primary-foreground/80 hover:bg-primary-foreground/8 hover:text-primary-foreground">
-                <GitBranch className="h-4 w-4" /> Analytics
-              </Link>
-              <Link href="/admin" className="flex items-center gap-3 rounded-sm px-3 py-2 text-xs font-semibold uppercase tracking-[0.06em] text-primary-foreground/80 hover:bg-primary-foreground/8 hover:text-primary-foreground">
-                <Shield className="h-4 w-4" /> Admin Portal
+              <Link href="/profile" className="flex items-center gap-3 rounded-sm bg-primary-foreground/8 px-3 py-2 text-xs font-semibold uppercase tracking-[0.06em]">
+                <Shield className="h-4 w-4" /> Profile
               </Link>
             </nav>
           </aside>
@@ -204,8 +198,9 @@ export default function ProfilePage() {
             <div className="rounded-md border bg-card px-4 py-3">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="flex items-center gap-4 text-sm">
-                  <Link href="/employee-dashboard" className="border-b-2 border-primary pb-1 font-medium">Dashboard</Link>
+                  <Link href="/employee-dashboard" className="text-muted-foreground hover:text-foreground">Dashboard</Link>
                   <Link href="/work-report" className="text-muted-foreground hover:text-foreground">Submit Report</Link>
+                  <Link href="/profile" className="border-b-2 border-primary pb-1 font-medium">Profile</Link>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="h-8 w-8 rounded-full border flex items-center justify-center text-yellow-500">◐</div>

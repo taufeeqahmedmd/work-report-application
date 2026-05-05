@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
+import { usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -29,9 +30,6 @@ import {
   Mail,
   RotateCcw,
   LayoutDashboard,
-  BarChart3,
-  Users,
-  Activity,
   Bell,
   Settings,
   LifeBuoy,
@@ -40,6 +38,7 @@ import {
 import { toast } from 'sonner';
 import Link from 'next/link';
 import type { WorkReport, SessionUser, WorkStatus, EditPermissions, Holiday } from '@/types';
+import { DEFAULT_PAGE_ACCESS } from '@/types';
 import { getISTTodayDateString, getShortDayIST, getShortDateIST, formatDateForDisplay, getDayOfMonthIST, convertUTCToISTDate } from '@/lib/date';
 import { logger } from '@/lib/logger';
 import { WorkReportCalendar } from '@/components/work-report-calendar';
@@ -59,6 +58,7 @@ export default function EmployeeDashboardPage() {
     department: string;
     isCompleted: boolean;
   }>>([]);
+  const pathname = usePathname();
 
   // Edit state
   const [editingReport, setEditingReport] = useState<WorkReport | null>(null);
@@ -298,6 +298,31 @@ export default function EmployeeDashboardPage() {
   // Check if today's report is submitted (using IST)
   const today = useMemo(() => getISTTodayDateString(), []);
   const todayReport = useMemo(() => reports.find(r => r.date === today), [reports, today]);
+  const pageAccess = session?.pageAccess ?? (session ? DEFAULT_PAGE_ACCESS[session.role] : null);
+
+  const sidebarLinks = useMemo(() => {
+    if (!session || !pageAccess) return [];
+
+    const isManagerLike = session.role === 'manager' || session.role === 'teamhead';
+    const links: Array<{ href: string; label: string; icon: React.ComponentType<{ className?: string }> }> = [];
+
+    if (pageAccess.dashboard) links.push({ href: '/employee-dashboard', label: 'Dashboard', icon: LayoutDashboard });
+    if (pageAccess.submit_report) links.push({ href: '/work-report', label: 'Submit Report', icon: FileText });
+    if (pageAccess.employee_reports) {
+      links.push({
+        href: isManagerLike ? '/team-report' : '/employee-reports',
+        label: isManagerLike ? 'Team Reports' : 'Reports',
+        icon: TrendingUp,
+      });
+    }
+    if (isManagerLike) links.push({ href: '/manage-team', label: 'Team Management', icon: User });
+    if (pageAccess.management_dashboard) links.push({ href: '/management-dashboard', label: 'Analytics', icon: CalendarDays });
+    if (pageAccess.admin_dashboard) links.push({ href: '/admin', label: 'Admin Portal', icon: Shield });
+    if (pageAccess.super_admin_dashboard) links.push({ href: '/super-admin', label: 'Super Admin', icon: Shield });
+
+    links.push({ href: '/profile', label: 'Profile', icon: User });
+    return links;
+  }, [session, pageAccess]);
   
   // Helper function to check if report is a late submission
   const isLateSubmission = useCallback((report: WorkReport) => {
@@ -349,8 +374,8 @@ export default function EmployeeDashboardPage() {
   }
 
   return (
-    <div className="min-h-screen pt-16 bg-background overflow-x-hidden">
-      <div className="px-3 sm:px-4 md:px-6 py-4">
+    <div className="h-screen pt-16 bg-background overflow-hidden">
+      <div className="h-full px-3 sm:px-4 md:px-6 py-4">
         <div className="grid gap-4 lg:grid-cols-[220px_1fr]">
           <aside className="hidden lg:flex lg:flex-col rounded-md border border-primary/30 bg-primary text-primary-foreground overflow-hidden min-h-[calc(100vh-7.5rem)]">
             <div className="px-5 py-4 border-b border-primary-foreground/10">
@@ -358,18 +383,26 @@ export default function EmployeeDashboardPage() {
               <p className="text-[11px] mt-1 uppercase tracking-[0.08em] text-primary-foreground/70">Enterprise Analytics</p>
             </div>
             <nav className="px-2 py-3 space-y-1">
-              <Link href="/employee-dashboard" className="flex items-center gap-3 rounded-sm bg-primary-foreground/8 px-3 py-2 text-xs font-semibold uppercase tracking-[0.06em]">
-                <LayoutDashboard className="h-4 w-4" /> Dashboard
-              </Link>
-              <Link href="/employee-reports" className="flex items-center gap-3 rounded-sm px-3 py-2 text-xs font-semibold uppercase tracking-[0.06em] text-primary-foreground/80 hover:bg-primary-foreground/8 hover:text-primary-foreground">
-                <BarChart3 className="h-4 w-4" /> Reports
-              </Link>
-              <Link href="/manage-team" className="flex items-center gap-3 rounded-sm px-3 py-2 text-xs font-semibold uppercase tracking-[0.06em] text-primary-foreground/80 hover:bg-primary-foreground/8 hover:text-primary-foreground">
-                <Users className="h-4 w-4" /> Team Management
-              </Link>
-              <Link href="/management-dashboard" className="flex items-center gap-3 rounded-sm px-3 py-2 text-xs font-semibold uppercase tracking-[0.06em] text-primary-foreground/80 hover:bg-primary-foreground/8 hover:text-primary-foreground">
-                <Activity className="h-4 w-4" /> Analytics
-              </Link>
+              {sidebarLinks.map((link) => {
+                const Icon = link.icon;
+                const isActive = link.href === '/employee-dashboard'
+                  ? pathname === '/employee-dashboard'
+                  : pathname.startsWith(link.href);
+
+                return (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    className={`flex items-center gap-3 rounded-sm px-3 py-2 text-xs font-semibold uppercase tracking-[0.06em] ${
+                      isActive
+                        ? 'bg-primary-foreground/8 text-primary-foreground'
+                        : 'text-primary-foreground/80 hover:bg-primary-foreground/8 hover:text-primary-foreground'
+                    }`}
+                  >
+                    <Icon className="h-4 w-4" /> {link.label}
+                  </Link>
+                );
+              })}
             </nav>
             <div className="mt-auto px-2 py-3 border-t border-primary-foreground/10 space-y-1">
               <button className="w-full flex items-center gap-3 rounded-sm px-3 py-2 text-xs font-semibold uppercase tracking-[0.06em] text-primary-foreground/80 hover:bg-primary-foreground/8 hover:text-primary-foreground">
@@ -381,8 +414,8 @@ export default function EmployeeDashboardPage() {
             </div>
           </aside>
 
-          <section className="space-y-4">
-            <div className="rounded-md border bg-card">
+          <section className="space-y-4 h-full overflow-y-auto pr-1">
+            <div className="rounded-md border border-border bg-card">
               <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
                 <div>
                   <h1 className="text-2xl font-semibold tracking-[-0.01em]">Dashboard</h1>
@@ -391,13 +424,6 @@ export default function EmployeeDashboardPage() {
                 <div className="flex items-center gap-3">
                   <button className="inline-flex h-8 w-8 items-center justify-center rounded-sm border text-muted-foreground"><Bell className="h-4 w-4" /></button>
                   <button className="inline-flex h-8 w-8 items-center justify-center rounded-sm border text-muted-foreground"><Settings className="h-4 w-4" /></button>
-                  <div className="text-right hidden sm:block">
-                    <p className="text-sm font-medium">{session.name}</p>
-                    <p className="text-xs text-muted-foreground">{session.email}</p>
-                  </div>
-                  <div className="h-9 w-9 rounded-md bg-primary text-primary-foreground flex items-center justify-center text-sm font-semibold">
-                    {session.name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()}
-                  </div>
                 </div>
               </div>
             </div>
@@ -431,7 +457,7 @@ export default function EmployeeDashboardPage() {
                 {/* Info */}
                 <div className="flex-1 min-w-0">
                   <h2 className="text-base sm:text-xl font-semibold truncate">Today&apos;s Report</h2>
-                  <div className="flex items-center gap-1.5 text-xs sm:text-sm text-muted-foreground mb-3">
+                  <div className="flex items-center gap-1.5 text-xs sm:text-sm text-muted-foreground mb-2">
                     <Mail className="w-3.5 h-3.5 flex-shrink-0" />
                     <span className="truncate">{session.email}</span>
                   </div>

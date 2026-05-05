@@ -6,11 +6,11 @@ import { usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { 
   Loader2, Search, FileText, Briefcase, Coffee, ArrowRight, Lock, Pencil, X, Check, 
   ChevronDown, Filter, Users, Calendar, AlertCircle, Shield, LayoutGrid, List, UserCheck, RotateCcw,
-  TrendingUp, Clock, CheckCircle2, CalendarDays, Building2, Sparkles, UserPlus, Bell, CircleHelp, Settings, LogOut, Activity
+  TrendingUp, Clock, CheckCircle2, CalendarDays, Building2, Sparkles, Bell, CircleHelp, Settings, LogOut, Activity
 } from 'lucide-react';
 import { toast } from 'sonner';
 import type { WorkReport, SessionUser, WorkStatus, EditPermissions, Department, Holiday } from '@/types';
@@ -49,15 +49,6 @@ export default function EmployeeReportsPage() {
   const [managerDepartments, setManagerDepartments] = useState<Department[]>([]);
   const [viewMode, setViewMode] = useState<'scrum' | 'list'>('scrum');
   const [holidays, setHolidays] = useState<Holiday[]>([]);
-  const [showAddUserDialog, setShowAddUserDialog] = useState(false);
-  const [creatingUser, setCreatingUser] = useState(false);
-  const [newUserForm, setNewUserForm] = useState({
-    employeeId: '',
-    name: '',
-    email: '',
-    password: '',
-    department: '',
-  });
 
   const canSearchOthers = session?.role === 'admin' || session?.role === 'superadmin' || session?.role === 'manager' || session?.role === 'teamhead';
   const isManager = session?.role === 'manager' || session?.role === 'teamhead';
@@ -243,42 +234,6 @@ export default function EmployeeReportsPage() {
     setDateRange(todayDates);
     fetchReports('', 'all', todayDates.start, todayDates.end);
   }, [fetchReports]);
-
-  const handleCreateTeamUser = useCallback(async () => {
-    if (!newUserForm.employeeId || !newUserForm.name || !newUserForm.email || !newUserForm.password || !newUserForm.department) {
-      toast.error('Please fill all required fields');
-      return;
-    }
-
-    setCreatingUser(true);
-    try {
-      const response = await fetch('/api/managers/team-users', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newUserForm),
-      });
-      const data = await response.json();
-
-      if (!data.success) {
-        toast.error(data.error || 'Failed to create team user');
-        return;
-      }
-
-      toast.success('Team user created successfully');
-      setShowAddUserDialog(false);
-      setNewUserForm({
-        employeeId: '',
-        name: '',
-        email: '',
-        password: '',
-        department: '',
-      });
-    } catch {
-      toast.error('Failed to create team user');
-    } finally {
-      setCreatingUser(false);
-    }
-  }, [newUserForm]);
 
   const handleEditClick = useCallback((report: WorkReport) => {
     setEditingReport(report);
@@ -742,82 +697,6 @@ export default function EmployeeReportsPage() {
                 </div>
               </div>
 
-              {isManager && managerDepartments.length > 0 && (
-                <Dialog open={showAddUserDialog} onOpenChange={setShowAddUserDialog}>
-                  <DialogTrigger asChild>
-                    <Button className="gap-2 rounded-sm bg-primary text-primary-foreground">
-                      <UserPlus className="h-4 w-4" />
-                      Add Team User
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Add Team User</DialogTitle>
-                      <DialogDescription>
-                        Managers can add employees only in their assigned team departments.
-                      </DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-3">
-                      <div className="space-y-1.5">
-                        <Label>Employee ID</Label>
-                        <Input
-                          value={newUserForm.employeeId}
-                          onChange={(e) => setNewUserForm(prev => ({ ...prev, employeeId: e.target.value }))}
-                          placeholder="EMP123"
-                        />
-                      </div>
-                      <div className="space-y-1.5">
-                        <Label>Name</Label>
-                        <Input
-                          value={newUserForm.name}
-                          onChange={(e) => setNewUserForm(prev => ({ ...prev, name: e.target.value }))}
-                          placeholder="Employee Name"
-                        />
-                      </div>
-                      <div className="space-y-1.5">
-                        <Label>Email</Label>
-                        <Input
-                          type="email"
-                          value={newUserForm.email}
-                          onChange={(e) => setNewUserForm(prev => ({ ...prev, email: e.target.value }))}
-                          placeholder="employee@company.com"
-                        />
-                      </div>
-                      <div className="space-y-1.5">
-                        <Label>Password</Label>
-                        <Input
-                          type="password"
-                          value={newUserForm.password}
-                          onChange={(e) => setNewUserForm(prev => ({ ...prev, password: e.target.value }))}
-                          placeholder="Min 6 characters"
-                        />
-                      </div>
-                      <div className="space-y-1.5">
-                        <Label>Department</Label>
-                        <select
-                          value={newUserForm.department}
-                          onChange={(e) => setNewUserForm(prev => ({ ...prev, department: e.target.value }))}
-                          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                        >
-                          <option value="">Select department</option>
-                          {managerDepartments.map((dept) => (
-                            <option key={dept.id} value={dept.name}>
-                              {dept.name}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                      <Button
-                        onClick={handleCreateTeamUser}
-                        disabled={creatingUser}
-                        className="w-full"
-                      >
-                        {creatingUser ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Create User'}
-                      </Button>
-                    </div>
-                  </DialogContent>
-                </Dialog>
-              )}
             </div>
             {canMarkAttendance(session) && (
               <div className="mt-4">
