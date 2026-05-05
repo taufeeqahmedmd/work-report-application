@@ -43,6 +43,14 @@ export default function EmployeeDashboardPage() {
   const [loading, setLoading] = useState(false);
   const [editPermissions, setEditPermissions] = useState<EditPermissions | null>(null);
   const [holidays, setHolidays] = useState<Holiday[]>([]);
+  const [checkpoints, setCheckpoints] = useState<Array<{
+    id: number;
+    checkpointId: number;
+    title: string;
+    description: string | null;
+    department: string;
+    isCompleted: boolean;
+  }>>([]);
 
   // Edit state
   const [editingReport, setEditingReport] = useState<WorkReport | null>(null);
@@ -165,6 +173,41 @@ export default function EmployeeDashboardPage() {
       }
     };
     fetchHolidays();
+  }, []);
+
+  useEffect(() => {
+    const fetchCheckpoints = async () => {
+      try {
+        const response = await fetch('/api/checkpoints/my');
+        const data = await response.json();
+        if (data.success) {
+          setCheckpoints(data.data?.checkpoints || []);
+        }
+      } catch (error) {
+        logger.error('Failed to fetch checkpoints:', error);
+      }
+    };
+    fetchCheckpoints();
+  }, []);
+
+  const handleToggleCheckpoint = useCallback(async (employeeCheckpointId: number, isCompleted: boolean) => {
+    try {
+      const response = await fetch('/api/checkpoints/my', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ employeeCheckpointId, isCompleted: !isCompleted }),
+      });
+      const data = await response.json();
+      if (!data.success) {
+        toast.error(data.error || 'Failed to update checklist');
+        return;
+      }
+      setCheckpoints(prev =>
+        prev.map(item => item.id === employeeCheckpointId ? { ...item, isCompleted: !isCompleted } : item)
+      );
+    } catch {
+      toast.error('Failed to update checklist');
+    }
   }, []);
 
   const handleEditClick = useCallback((report: WorkReport) => {
@@ -451,6 +494,35 @@ export default function EmployeeDashboardPage() {
               <p className="text-2xl sm:text-3xl font-bold">
                 {stats.attendanceRate}%
               </p>
+            </div>
+          </div>
+
+          <div className="mb-4 sm:mb-6 rounded-xl sm:rounded-2xl border bg-card shadow-sm overflow-hidden">
+            <div className="p-3 sm:p-4 border-b bg-muted/30">
+              <h3 className="font-semibold text-sm">Assigned Checklist</h3>
+              <p className="text-[11px] sm:text-xs text-muted-foreground mt-0.5">
+                Checkpoints assigned by your manager or team head.
+              </p>
+            </div>
+            <div className="p-3 sm:p-4 space-y-2">
+              {checkpoints.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No checklist items assigned yet.</p>
+              ) : (
+                checkpoints.map((item) => (
+                  <label key={item.id} className="flex items-start gap-2 rounded-md border p-2.5 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={item.isCompleted}
+                      onChange={() => handleToggleCheckpoint(item.id, item.isCompleted)}
+                      className="mt-1"
+                    />
+                    <span className="text-sm">
+                      <span className={`font-medium ${item.isCompleted ? 'line-through text-muted-foreground' : ''}`}>{item.title}</span>
+                      {item.description ? <span className="block text-xs text-muted-foreground mt-0.5">{item.description}</span> : null}
+                    </span>
+                  </label>
+                ))
+              )}
             </div>
           </div>
 

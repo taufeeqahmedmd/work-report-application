@@ -3,7 +3,7 @@ import { getSession } from '@/lib/auth';
 import { getManagerDepartments } from '@/lib/db/queries';
 import type { ApiResponse, Department } from '@/types';
 
-// GET: Get departments for the current manager
+// GET: Get departments for the current manager/team head
 export async function GET(request: NextRequest) {
   try {
     const session = await getSession();
@@ -15,10 +15,10 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Only managers can access this endpoint
-    if (session.role !== 'manager') {
+    // Only managers/team heads can access this endpoint
+    if (session.role !== 'manager' && session.role !== 'teamhead') {
       return NextResponse.json<ApiResponse>(
-        { success: false, error: 'Only managers can access this endpoint' },
+        { success: false, error: 'Only managers or team heads can access this endpoint' },
         { status: 403 }
       );
     }

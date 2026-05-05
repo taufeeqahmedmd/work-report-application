@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { Loader2, Users, Calendar, Briefcase, Coffee, ChevronLeft, ChevronRight, Filter, X, TrendingUp, Building2, Check, Clock, Building } from 'lucide-react';
+import { Loader2, Users, User, Calendar, Briefcase, Coffee, ChevronLeft, ChevronRight, Filter, X, TrendingUp, Building2, Check, Clock, Building, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
@@ -28,20 +28,9 @@ interface MonthlyStatusData {
   entities: Entity[];
   branches: Branch[];
   departments: Department[];
-}
-
-interface AnalyticsData {
-  summary: {
-    totalReports: number;
-    workingDays: number;
-    leaveDays: number;
-    uniqueEmployees: number;
-  };
-  departmentStats: Array<{
-    department: string;
-    working: number;
-    leave: number;
-    total: number;
+  holidays: Array<{
+    date: string;
+    name: string | null;
   }>;
 }
 
@@ -53,7 +42,6 @@ const MONTH_NAMES = [
 export default function ManagementDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [currentDateStr, setCurrentDateStr] = useState('');
-  const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null);
   const [statusData, setStatusData] = useState<MonthlyStatusData | null>(null);
   const [error, setError] = useState('');
 
@@ -64,6 +52,8 @@ export default function ManagementDashboardPage() {
   const [selectedEntity, setSelectedEntity] = useState<string>('all');
   const [selectedBranch, setSelectedBranch] = useState<string>('all');
   const [selectedDepartment, setSelectedDepartment] = useState<string>('all');
+  const [summaryStartDate, setSummaryStartDate] = useState('');
+  const [summaryEndDate, setSummaryEndDate] = useState('');
   const [cardStartDate, setCardStartDate] = useState('');
   const [cardEndDate, setCardEndDate] = useState('');
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
@@ -71,16 +61,6 @@ export default function ManagementDashboardPage() {
   const [selectedReport, setSelectedReport] = useState<WorkReport | null>(null);
   const [selectedReportMeta, setSelectedReportMeta] = useState<{ employeeName: string; date: string } | null>(null);
   const [reportDialogError, setReportDialogError] = useState('');
-
-  const fetchAnalytics = async () => {
-    try {
-      const response = await fetch('/api/analytics?days=30');
-      const result = await response.json();
-      if (result.success) setAnalyticsData(result.data);
-    } catch (error) {
-      logger.error('Failed to load analytics', error);
-    }
-  };
 
   const fetchMonthlyStatus = useCallback(async () => {
     setLoading(true);
@@ -109,7 +89,6 @@ export default function ManagementDashboardPage() {
   }, [selectedYear, selectedMonth, selectedEntity, selectedBranch, selectedDepartment]);
 
   useEffect(() => {
-    fetchAnalytics();
     // Set current date string on client mount to avoid hydration mismatch
     setCurrentDateStr(new Date().toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }));
   }, []);
@@ -126,6 +105,8 @@ export default function ManagementDashboardPage() {
       : `${selectedYear}-${String(selectedMonth).padStart(2, '0')}-01`;
     setCardStartDate(defaultDate);
     setCardEndDate(defaultDate);
+    setSummaryStartDate(defaultDate);
+    setSummaryEndDate(defaultDate);
   }, [selectedYear, selectedMonth]);
 
   // Refresh data when window regains focus (in case holidays were updated in another tab)
@@ -333,11 +314,75 @@ export default function ManagementDashboardPage() {
   };
 
   const hasActiveFilters = selectedEntity !== 'all' || selectedBranch !== 'all' || selectedDepartment !== 'all';
+  
+  const summaryMetrics = useMemo(() => {
+    if (!statusData || !summaryStartDate || !summaryEndDate) {
+      return {
+        totalEmployees: 0,
+        activeEmployees: 0,
+        workingDays: 0,
+        holidaysCount: 0,
+        usagePercentage: 0,
+      };
+    }
 
-  // Calculate compliance rate
-  const complianceRate = analyticsData 
-    ? Math.round((analyticsData.summary.workingDays / (analyticsData.summary.workingDays + analyticsData.summary.leaveDays || 1)) * 100)
-    : 0;
+    const totalEmployees = statusData.employees.length;
+    const holidaySet = new Set(
+      statusData.holidays
+        .filter(h => h.date >= summaryStartDate && h.date <= summaryEndDate)
+        .map(h => h.date)
+    );
+
+    let workingDays = 0;
+    const current = new Date(summaryStartDate);
+    const end = new Date(summaryEndDate);
+    while (current <= end) {
+      const yyyy = current.getFullYear();
+      const mm = String(current.getMonth() + 1).padStart(2, '0');
+      const dd = String(current.getDate()).padStart(2, '0');
+      const dateStr = `${yyyy}-${mm}-${dd}`;
+      const isSunday = current.getDay() === 0;
+      if (!isSunday && !holidaySet.has(dateStr)) {
+        workingDays += 1;
+      }
+      current.setDate(current.getDate() + 1);
+    }
+
+    let activeEmployees = 0;
+    let usageActions = 0;
+    statusData.employees.forEach((employee) => {
+      let hasAnyUsage = false;
+      Object.entries(employee.dailyStatus).forEach(([date, status]) => {
+        if (date < summaryStartDate || date > summaryEndDate) return;
+        if (status === 'submitted' || status === 'leave') {
+          hasAnyUsage = true;
+          usageActions += 1;
+        }
+      });
+      if (hasAnyUsage) activeEmployees += 1;
+    });
+
+    const possibleUsage = totalEmployees * workingDays;
+    const usagePercentage = possibleUsage > 0
+      ? Math.round((usageActions / possibleUsage) * 100)
+      : 0;
+
+    return {
+      totalEmployees,
+      activeEmployees,
+      workingDays,
+      holidaysCount: holidaySet.size,
+      usagePercentage,
+    };
+  }, [statusData, summaryStartDate, summaryEndDate]);
+
+  const handleResetSummaryFilter = useCallback(() => {
+    const today = new Date();
+    const startOfMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-01`;
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    setSummaryStartDate(startOfMonth);
+    setSummaryEndDate(todayStr);
+  }, []);
 
   return (
     <div className="min-h-screen pt-16 bg-gradient-to-br from-background via-background to-muted/20">
@@ -348,7 +393,7 @@ export default function ManagementDashboardPage() {
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
               <h1 className="text-2xl font-bold tracking-tight">Management Dashboard</h1>
-              <p className="text-muted-foreground">Work report submission overview • Last 30 days</p>
+              <p className="text-muted-foreground">Work report submission overview</p>
             </div>
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Calendar className="h-4 w-4" />
@@ -357,16 +402,36 @@ export default function ManagementDashboardPage() {
           </div>
 
           {/* Stats Cards */}
-          {analyticsData && (
+          <div className="space-y-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs text-muted-foreground">Summary Date Range:</span>
+              <Input
+                type="date"
+                value={summaryStartDate}
+                onChange={(e) => setSummaryStartDate(e.target.value)}
+                className="h-8 w-40 text-xs"
+              />
+              <span className="text-xs text-muted-foreground">to</span>
+              <Input
+                type="date"
+                value={summaryEndDate}
+                onChange={(e) => setSummaryEndDate(e.target.value)}
+                className="h-8 w-40 text-xs"
+              />
+              <Button variant="ghost" size="sm" onClick={handleResetSummaryFilter} className="h-8 text-muted-foreground">
+                <X className="h-3.5 w-3.5 mr-1.5" />
+                Reset
+              </Button>
+            </div>
             <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
               <div className="bg-card border rounded-xl p-5 shadow-sm">
                 <div className="flex items-center gap-3">
                   <div className="p-2.5 rounded-lg bg-primary/10">
-                    <Calendar className="h-5 w-5 text-primary" />
+                    <Users className="h-5 w-5 text-primary" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold">{analyticsData.summary.totalReports}</p>
-                    <p className="text-xs text-muted-foreground">Total Reports</p>
+                    <p className="text-2xl font-bold">{summaryMetrics.totalEmployees}</p>
+                    <p className="text-xs text-muted-foreground">Total Employees</p>
                   </div>
                 </div>
               </div>
@@ -374,11 +439,11 @@ export default function ManagementDashboardPage() {
               <div className="bg-card border rounded-xl p-5 shadow-sm">
                 <div className="flex items-center gap-3">
                   <div className="p-2.5 rounded-lg bg-emerald-500/10">
-                    <Briefcase className="h-5 w-5 text-emerald-600" />
+                    <User className="h-5 w-5 text-emerald-600" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-emerald-600">{analyticsData.summary.workingDays}</p>
-                    <p className="text-xs text-muted-foreground">Working Days</p>
+                    <p className="text-2xl font-bold text-emerald-600">{summaryMetrics.activeEmployees}</p>
+                    <p className="text-xs text-muted-foreground">Active Employees</p>
                   </div>
                 </div>
               </div>
@@ -386,11 +451,11 @@ export default function ManagementDashboardPage() {
               <div className="bg-card border rounded-xl p-5 shadow-sm">
                 <div className="flex items-center gap-3">
                   <div className="p-2.5 rounded-lg bg-amber-500/10">
-                    <Coffee className="h-5 w-5 text-amber-600" />
+                    <Briefcase className="h-5 w-5 text-amber-600" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-amber-600">{analyticsData.summary.leaveDays}</p>
-                    <p className="text-xs text-muted-foreground">Leave Days</p>
+                    <p className="text-2xl font-bold text-amber-600">{summaryMetrics.workingDays}</p>
+                    <p className="text-xs text-muted-foreground">Working Days</p>
                   </div>
                 </div>
               </div>
@@ -398,11 +463,11 @@ export default function ManagementDashboardPage() {
               <div className="bg-card border rounded-xl p-5 shadow-sm">
                 <div className="flex items-center gap-3">
                   <div className="p-2.5 rounded-lg bg-blue-500/10">
-                    <Users className="h-5 w-5 text-blue-600" />
+                    <Calendar className="h-5 w-5 text-blue-600" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-blue-600">{analyticsData.summary.uniqueEmployees}</p>
-                    <p className="text-xs text-muted-foreground">Active Employees</p>
+                    <p className="text-2xl font-bold text-blue-600">{summaryMetrics.holidaysCount}</p>
+                    <p className="text-xs text-muted-foreground">Holidays</p>
                   </div>
                 </div>
               </div>
@@ -413,13 +478,21 @@ export default function ManagementDashboardPage() {
                     <TrendingUp className="h-5 w-5 text-violet-600" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-violet-600">{complianceRate}%</p>
-                    <p className="text-xs text-muted-foreground">Work Rate</p>
+                    <p className="text-2xl font-bold text-violet-600">{summaryMetrics.usagePercentage}%</p>
+                    <div className="flex items-center gap-1">
+                      <p className="text-xs text-muted-foreground">App Usage</p>
+                      <span
+                        className="inline-flex items-center justify-center text-muted-foreground/70"
+                        title="Usage % = (Submitted + Leave entries) / (Total Employees × Working Days in selected range) × 100"
+                      >
+                        <Info className="h-3.5 w-3.5" />
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
-          )}
+          </div>
 
           {/* Department Stats */}
           {monthlyDepartmentStats.length > 0 && (
@@ -447,7 +520,7 @@ export default function ManagementDashboardPage() {
                   className="h-8 w-40 text-xs"
                 />
               </div>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
                 {monthlyDepartmentStats.map((dept) => {
                   const rate = dept.totalExpected > 0 ? Math.round(((dept.working + dept.leave) / dept.totalExpected) * 100) : 0;
                   const circumference = 2 * Math.PI * 20;
@@ -458,11 +531,11 @@ export default function ManagementDashboardPage() {
                     <button 
                       key={dept.department} 
                       onClick={() => setSelectedDepartment(dept.department)}
-                      className={`bg-card border rounded-xl p-4 hover:shadow-md transition-all hover:border-primary/20 text-left ${isActive ? 'ring-2 ring-primary/40 border-primary/30' : ''}`}
+                      className={`bg-card border rounded-xl p-4 hover:shadow-md transition-all hover:border-primary/20 text-left min-h-[128px] ${isActive ? 'ring-2 ring-primary/40 border-primary/30' : ''}`}
                     >
-                      <div className="flex items-start justify-between mb-3">
+                      <div className="flex items-start justify-between gap-3 mb-3">
                         <div className="flex-1 min-w-0">
-                          <h4 className="font-medium text-sm truncate" title={dept.department}>
+                          <h4 className="font-semibold text-sm leading-tight truncate" title={dept.department}>
                             {dept.department}
                           </h4>
                           <p className="text-xs text-muted-foreground mt-0.5">
@@ -470,8 +543,8 @@ export default function ManagementDashboardPage() {
                           </p>
                         </div>
                         {/* Circular Progress */}
-                        <div className="relative w-12 h-12 flex-shrink-0">
-                          <svg className="w-12 h-12 -rotate-90" viewBox="0 0 48 48">
+                        <div className="relative w-11 h-11 flex-shrink-0">
+                          <svg className="w-11 h-11 -rotate-90" viewBox="0 0 48 48">
                             <circle
                               cx="24"
                               cy="24"
@@ -496,27 +569,33 @@ export default function ManagementDashboardPage() {
                             />
                           </svg>
                           <div className="absolute inset-0 flex items-center justify-center">
-                            <span className={`text-xs font-bold ${rate >= 80 ? 'text-emerald-600' : rate >= 50 ? 'text-amber-600' : 'text-rose-600'}`}>
+                            <span className={`text-[10px] font-bold ${rate >= 80 ? 'text-emerald-600' : rate >= 50 ? 'text-amber-600' : 'text-rose-600'}`}>
                               {rate}%
                             </span>
                           </div>
                         </div>
                       </div>
-                      <div className="flex items-center justify-between text-xs">
-                        <div className="flex items-center gap-1.5">
-                          <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-                          <span className="text-muted-foreground">Working</span>
-                          <span className="font-semibold text-emerald-600">{dept.working}</span>
+                      <div className="grid grid-cols-3 gap-2 text-[11px]">
+                        <div className="rounded-md bg-emerald-500/5 border border-emerald-500/20 px-2 py-1.5">
+                          <div className="flex items-center gap-1.5 text-muted-foreground">
+                            <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                            <span>Working</span>
+                          </div>
+                          <p className="font-semibold text-emerald-600 mt-0.5">{dept.working}</p>
                         </div>
-                        <div className="flex items-center gap-1.5">
-                          <span className="w-2 h-2 rounded-full bg-amber-500"></span>
-                          <span className="text-muted-foreground">Leave</span>
-                          <span className="font-semibold text-amber-600">{dept.leave}</span>
+                        <div className="rounded-md bg-amber-500/5 border border-amber-500/20 px-2 py-1.5">
+                          <div className="flex items-center gap-1.5 text-muted-foreground">
+                            <span className="w-2 h-2 rounded-full bg-amber-500"></span>
+                            <span>Leave</span>
+                          </div>
+                          <p className="font-semibold text-amber-600 mt-0.5">{dept.leave}</p>
                         </div>
-                        <div className="flex items-center gap-1.5">
-                          <span className="w-2 h-2 rounded-full bg-rose-500"></span>
-                          <span className="text-muted-foreground">Missing</span>
-                          <span className="font-semibold text-rose-600">{dept.missing}</span>
+                        <div className="rounded-md bg-rose-500/5 border border-rose-500/20 px-2 py-1.5">
+                          <div className="flex items-center gap-1.5 text-muted-foreground">
+                            <span className="w-2 h-2 rounded-full bg-rose-500"></span>
+                            <span>Missing</span>
+                          </div>
+                          <p className="font-semibold text-rose-600 mt-0.5">{dept.missing}</p>
                         </div>
                       </div>
                     </button>

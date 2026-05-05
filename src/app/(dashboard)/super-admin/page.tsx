@@ -53,7 +53,7 @@ export default function SuperAdminPage() {
     password: '',
     entityId: '' as number | '',
     branchId: '' as number | '',
-    role: 'employee' as 'employee' | 'manager' | 'admin' | 'superadmin' | 'boardmember',
+    role: 'employee' as 'employee' | 'manager' | 'teamhead' | 'admin' | 'superadmin' | 'boardmember',
   });
   const [userPageAccess, setUserPageAccess] = useState<PageAccess>(DEFAULT_PAGE_ACCESS.employee);
 
@@ -69,7 +69,7 @@ export default function SuperAdminPage() {
     password: '', // Leave empty to keep existing password
     entityId: '' as number | '',
     branchId: '' as number | '',
-    role: 'employee' as 'employee' | 'manager' | 'admin' | 'superadmin' | 'boardmember',
+    role: 'employee' as 'employee' | 'manager' | 'teamhead' | 'admin' | 'superadmin' | 'boardmember',
     status: 'active' as 'active' | 'inactive',
   });
   const [editPageAccess, setEditPageAccess] = useState<PageAccess>(DEFAULT_PAGE_ACCESS.employee);
@@ -1513,7 +1513,7 @@ export default function SuperAdminPage() {
                     className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     value={userFormData.role}
                     onChange={(e) => {
-                      const newRole = e.target.value as 'employee' | 'manager' | 'admin' | 'superadmin' | 'boardmember';
+                      const newRole = e.target.value as 'employee' | 'manager' | 'teamhead' | 'admin' | 'superadmin' | 'boardmember';
                       setUserFormData({ 
                         ...userFormData, 
                         role: newRole,
@@ -1526,6 +1526,7 @@ export default function SuperAdminPage() {
                   >
                     <option value="employee">Employee</option>
                     <option value="manager">Manager</option>
+                    <option value="teamhead">Team Head</option>
                     <option value="boardmember">Board Member</option>
                     <option value="admin">Admin</option>
                     <option value="superadmin">Super Admin</option>
@@ -1930,6 +1931,7 @@ export default function SuperAdminPage() {
                   <option value="all">All Roles</option>
                   <option value="employee">Employee</option>
                   <option value="manager">Manager</option>
+                  <option value="teamhead">Team Head</option>
                   <option value="boardmember">Board Member</option>
                   <option value="admin">Admin</option>
                   <option value="superadmin">Super Admin</option>
@@ -2093,7 +2095,7 @@ export default function SuperAdminPage() {
                       className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                       value={editFormData.role}
                       onChange={(e) => {
-                        const newRole = e.target.value as 'employee' | 'manager' | 'admin' | 'superadmin' | 'boardmember';
+                        const newRole = e.target.value as 'employee' | 'manager' | 'teamhead' | 'admin' | 'superadmin' | 'boardmember';
                         setEditFormData({ 
                           ...editFormData, 
                           role: newRole,
@@ -2104,6 +2106,7 @@ export default function SuperAdminPage() {
                     >
                       <option value="employee">Employee</option>
                       <option value="manager">Manager</option>
+                      <option value="teamhead">Team Head</option>
                       <option value="boardmember">Board Member</option>
                       <option value="admin">Admin</option>
                       <option value="superadmin">Super Admin</option>

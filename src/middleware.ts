@@ -12,6 +12,7 @@ const protectedRoutes = [
   '/managers-dashboard',
   '/employee-reports',
   '/team-report',
+  '/manage-team',
   '/employee-dashboard',
   '/holidays',
   '/mark-attendance',
@@ -32,6 +33,16 @@ const DEFAULT_PAGE_ACCESS: Record<UserRole, PageAccess> = {
     mark_holidays: false,
   },
   manager: {
+    dashboard: true,
+    submit_report: true,
+    employee_reports: true,
+    management_dashboard: true,
+    admin_dashboard: false,
+    super_admin_dashboard: false,
+    mark_attendance: true,
+    mark_holidays: true,
+  },
+  teamhead: {
     dashboard: true,
     submit_report: true,
     employee_reports: true,
@@ -79,6 +90,7 @@ const ROUTE_TO_PAGE_ACCESS: Record<string, keyof PageAccess> = {
   '/work-report': 'submit_report',
   '/employee-reports': 'employee_reports',
   '/team-report': 'employee_reports',
+  '/manage-team': 'employee_reports',
   '/management-dashboard': 'management_dashboard',
   '/managers-dashboard': 'management_dashboard', // Uses same permission as management dashboard
   '/admin': 'admin_dashboard',

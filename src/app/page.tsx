@@ -18,6 +18,7 @@ function getDashboardUrl(role: SessionUser['role']): string {
     case 'boardmember':
       return '/management-dashboard';
     case 'manager':
+    case 'teamhead':
     case 'employee':
     default:
       return '/employee-dashboard';

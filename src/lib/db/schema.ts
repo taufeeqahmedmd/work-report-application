@@ -71,7 +71,7 @@ export const employees = pgTable('employees', {
   password: text('password').notNull(),
   entityId: integer('entity_id').references(() => entities.id, { onDelete: 'set null' }),
   branchId: integer('branch_id').references(() => branches.id, { onDelete: 'set null' }),
-  role: text('role', { enum: ['employee', 'manager', 'admin', 'superadmin', 'boardmember'] }).notNull().default('employee'),
+  role: text('role', { enum: ['employee', 'manager', 'teamhead', 'admin', 'superadmin', 'boardmember'] }).notNull().default('employee'),
   status: text('status', { enum: ['active', 'inactive'] }).notNull().default('active'),
   pageAccess: text('page_access'), // JSON string of PageAccess
   createdBy: integer('created_by'), // Self-referential FK added in database initialization

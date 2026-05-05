@@ -30,6 +30,10 @@ interface MonthlyStatusResponse {
   entities: Entity[];
   branches: Branch[];
   departments: Department[];
+  holidays: Array<{
+    date: string;
+    name: string | null;
+  }>;
 }
 
 function getDaysInMonth(year: number, month: number): number {
@@ -49,8 +53,8 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getSession();
     
-    // Allow superadmin, admin, manager, and boardmember to access this endpoint
-    const canViewReports = hasRole(session, ['superadmin', 'admin', 'manager', 'boardmember']);
+    // Allow superadmin, admin, manager/team head, and boardmember to access this endpoint
+    const canViewReports = hasRole(session, ['superadmin', 'admin', 'manager', 'teamhead', 'boardmember']);
     
     if (!session || !canViewReports) {
       return NextResponse.json<ApiResponse>(
@@ -173,6 +177,7 @@ export async function GET(request: NextRequest) {
         entities,
         branches,
         departments,
+        holidays: holidays.map(h => ({ date: h.date, name: h.name })),
       },
     });
 

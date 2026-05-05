@@ -1,5 +1,5 @@
 // User roles
-export type UserRole = 'employee' | 'manager' | 'admin' | 'superadmin' | 'boardmember';
+export type UserRole = 'employee' | 'manager' | 'teamhead' | 'admin' | 'superadmin' | 'boardmember';
 
 // User status
 export type UserStatus = 'active' | 'inactive';
@@ -255,6 +255,16 @@ export const DEFAULT_PAGE_ACCESS: Record<UserRole, PageAccess> = {
     super_admin_dashboard: false,
     mark_attendance: true, // Managers can mark attendance by default
     mark_holidays: true, // Managers can mark holidays by default
+  },
+  teamhead: {
+    dashboard: true,
+    submit_report: true,
+    employee_reports: true,
+    management_dashboard: true,
+    admin_dashboard: false,
+    super_admin_dashboard: false,
+    mark_attendance: true,
+    mark_holidays: true,
   },
   boardmember: {
     dashboard: true,

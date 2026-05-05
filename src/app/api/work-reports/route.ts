@@ -44,8 +44,8 @@ export async function GET(request: NextRequest) {
     const offset = parseInt(url.searchParams.get('offset') || '0');
 
     // Managers, admins, and superadmins can view all reports
-    const canViewAll = session.role === 'admin' || session.role === 'superadmin' || session.role === 'manager';
-    const isManager = session.role === 'manager';
+    const canViewAll = session.role === 'admin' || session.role === 'superadmin' || session.role === 'manager' || session.role === 'teamhead';
+    const isManager = session.role === 'manager' || session.role === 'teamhead';
 
     // Return unique departments list if requested
     if (getDepartments === 'true' && canViewAll) {

@@ -27,7 +27,7 @@ export default function AdminPage() {
     department: '',
     departmentIds: [] as number[],
     password: '',
-    role: 'employee' as 'employee' | 'manager' | 'admin' | 'boardmember',
+    role: 'employee' as 'employee' | 'manager' | 'teamhead' | 'admin' | 'boardmember',
   });
 
   // Edit user state
@@ -40,7 +40,7 @@ export default function AdminPage() {
     department: '',
     departmentIds: [] as number[],
     password: '',
-    role: 'employee' as 'employee' | 'manager' | 'admin' | 'boardmember',
+    role: 'employee' as 'employee' | 'manager' | 'teamhead' | 'admin' | 'boardmember',
     status: 'active' as 'active' | 'inactive',
   });
 
@@ -212,7 +212,7 @@ export default function AdminPage() {
       department: user.department,
       departmentIds: [],
       password: '',
-      role: user.role as 'employee' | 'manager' | 'admin' | 'boardmember',
+      role: user.role as 'employee' | 'manager' | 'teamhead' | 'admin' | 'boardmember',
       status: user.status,
     });
 
@@ -1005,12 +1005,13 @@ export default function AdminPage() {
                   <select
                     id="role"
                     value={formData.role}
-                    onChange={(e) => setFormData({ ...formData, role: e.target.value as 'employee' | 'manager' | 'admin' | 'boardmember', department: '', departmentIds: [] })}
+                    onChange={(e) => setFormData({ ...formData, role: e.target.value as 'employee' | 'manager' | 'teamhead' | 'admin' | 'boardmember', department: '', departmentIds: [] })}
                     className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                     required
                   >
                     <option value="employee">Employee</option>
                     <option value="manager">Manager</option>
+                    <option value="teamhead">Team Head</option>
                     <option value="boardmember">Board Member</option>
                     {session?.role === 'superadmin' && <option value="admin">Admin</option>}
                   </select>
@@ -1288,12 +1289,13 @@ export default function AdminPage() {
                         value={editFormData.role}
                         onChange={(e) => setEditFormData({ 
                           ...editFormData, 
-                          role: e.target.value as 'employee' | 'manager' | 'admin' | 'boardmember',
+                          role: e.target.value as 'employee' | 'manager' | 'teamhead' | 'admin' | 'boardmember',
                         })}
                         required
                       >
                         <option value="employee">Employee</option>
                         <option value="manager">Manager</option>
+                        <option value="teamhead">Team Head</option>
                         <option value="boardmember">Board Member</option>
                         <option value="admin">Admin</option>
                       </select>

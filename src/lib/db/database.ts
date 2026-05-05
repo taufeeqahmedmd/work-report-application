@@ -280,7 +280,7 @@ export async function initializeDatabase(): Promise<void> {
       password TEXT NOT NULL,
       entity_id INTEGER REFERENCES entities(id) ON DELETE SET NULL,
       branch_id INTEGER REFERENCES branches(id) ON DELETE SET NULL,
-      role TEXT NOT NULL DEFAULT 'employee' CHECK(role IN ('employee', 'manager', 'admin', 'superadmin', 'boardmember')),
+      role TEXT NOT NULL DEFAULT 'employee' CHECK(role IN ('employee', 'manager', 'teamhead', 'admin', 'superadmin', 'boardmember')),
       status TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('active', 'inactive')),
       page_access TEXT,
       created_by INTEGER REFERENCES employees(id) ON DELETE SET NULL,

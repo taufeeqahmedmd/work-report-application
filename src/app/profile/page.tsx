@@ -135,6 +135,8 @@ export default function ProfilePage() {
         return 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400';
       case 'manager':
         return 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400';
+      case 'teamhead':
+        return 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400';
       case 'boardmember':
         return 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400';
       default:
@@ -200,7 +202,11 @@ export default function ProfilePage() {
                 <div>
                   <CardTitle className="text-xl">{profile.name}</CardTitle>
                   <span className={`inline-flex text-xs px-2.5 py-1 rounded-full font-medium mt-1 ${getRoleBadgeClass(profile.role)}`}>
-                    {profile.role === 'boardmember' ? 'Board Member' : profile.role.charAt(0).toUpperCase() + profile.role.slice(1)}
+                    {profile.role === 'boardmember'
+                      ? 'Board Member'
+                      : profile.role === 'teamhead'
+                        ? 'Team Head'
+                        : profile.role.charAt(0).toUpperCase() + profile.role.slice(1)}
                   </span>
                 </div>
               </div>

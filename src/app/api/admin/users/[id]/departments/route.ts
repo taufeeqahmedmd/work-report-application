@@ -45,7 +45,7 @@ export async function GET(
     }
 
     // Allow managers and Operations department users
-    if (employee.role !== 'manager' && employee.department !== 'Operations') {
+    if ((employee.role !== 'manager' && employee.role !== 'teamhead') && employee.department !== 'Operations') {
       return NextResponse.json<ApiResponse>(
         { success: false, error: 'User is not a manager or Operations department user' },
         { status: 400 }
@@ -101,7 +101,7 @@ export async function PUT(
     }
 
     // Allow managers and Operations department users
-    if (employee.role !== 'manager' && employee.department !== 'Operations') {
+    if ((employee.role !== 'manager' && employee.role !== 'teamhead') && employee.department !== 'Operations') {
       return NextResponse.json<ApiResponse>(
         { success: false, error: 'User is not a manager or Operations department user' },
         { status: 400 }

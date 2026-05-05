@@ -44,7 +44,7 @@ export async function GET(
 
     // Check access: employees can only view their own, managers can view their department
     const canViewAll = session.role === 'admin' || session.role === 'superadmin';
-    const isManager = session.role === 'manager';
+    const isManager = session.role === 'manager' || session.role === 'teamhead';
     const isOwnReport = report.employeeId === session.employeeId;
     const isSameDepartment = report.department === session.department;
 
@@ -116,7 +116,7 @@ export async function PUT(
     } else if (session.role === 'employee') {
       // Employees can only edit their own reports if permission is enabled
       canEdit = isOwnReport && permissions.employee_can_edit_own_reports;
-    } else if (session.role === 'manager') {
+    } else if (session.role === 'manager' || session.role === 'teamhead') {
       // Managers can edit their own reports when employee_can_edit_own_reports is enabled
       if (isOwnReport && permissions.employee_can_edit_own_reports) {
         canEdit = true;
@@ -167,7 +167,7 @@ export async function PUT(
     const newHalfday = newStatus === 'working' ? (halfday !== undefined ? halfday : report.halfday) : false;
 
     // Check if this is a manager editing a team member (isOwnReport already declared above)
-    const isManagerEditingTeamMember = session.role === 'manager' && !isOwnReport;
+    const isManagerEditingTeamMember = (session.role === 'manager' || session.role === 'teamhead') && !isOwnReport;
 
     // Work report is required when:
     // 1. Employee is editing their own report and status is working

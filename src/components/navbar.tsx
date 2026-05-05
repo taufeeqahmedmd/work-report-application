@@ -18,7 +18,7 @@ import { ThemeToggle } from '@/components/theme-toggle';
 import { Menu, LogOut, User, LayoutDashboard, FileText, BarChart3, ChevronDown, ArrowRight, Home, CalendarDays, UserCheck } from 'lucide-react';
 import type { SessionUser, PageAccess } from '@/types';
 import { DEFAULT_PAGE_ACCESS } from '@/types';
-import { canMarkAttendance, canMarkHolidays } from '@/lib/permissions';
+import { canMarkHolidays } from '@/lib/permissions';
 
 export function Navbar() {
   const router = useRouter();
@@ -105,7 +105,6 @@ export function Navbar() {
   const allNavLinks: NavLink[] = [
     { href: '/employee-dashboard', label: 'Dashboard', icon: Home, requireAuth: true, accessKey: 'dashboard' as keyof PageAccess },
     { href: '/work-report', label: 'Submit Report', icon: FileText, accessKey: 'submit_report' as keyof PageAccess },
-    { href: '/mark-attendance', label: 'Mark Attendance', icon: UserCheck, requireAuth: true, accessKey: 'mark_attendance' as keyof PageAccess },
   ];
 
   const navLinks = allNavLinks.filter(link => {
@@ -119,10 +118,12 @@ export function Navbar() {
   });
 
   // View Reports link - based on pageAccess
-  const viewReportsLabel = user?.role === 'manager' ? 'Team Reports' : 'Employee Reports';
-  const viewReportsHref = user?.role === 'manager' ? '/team-report' : '/employee-reports';
+  const isTeamLead = user?.role === 'manager' || user?.role === 'teamhead';
+  const viewReportsLabel = isTeamLead ? 'Team Reports' : 'Employee Reports';
+  const viewReportsHref = isTeamLead ? '/team-report' : '/employee-reports';
   const viewReportsLink = { href: viewReportsHref, label: viewReportsLabel, icon: BarChart3 };
   const showViewReports = user && pageAccess?.employee_reports === true;
+  const showManageTeam = isTeamLead;
 
   // Admin links - based on pageAccess
   const adminLinks = [
@@ -137,9 +138,6 @@ export function Navbar() {
 
   // Holidays link - show if user can mark holidays (Manager, Admin, Super Admin, or Operations with permission)
   const canMarkHolidaysAccess = canMarkHolidays(user);
-
-  // Mark Attendance link - show for any user with mark_attendance permission
-  const canMarkAttendanceAccess = canMarkAttendance(user);
 
   return (
     <nav 
@@ -196,6 +194,18 @@ export function Navbar() {
               )}
             </Link>
           )}
+          {showManageTeam && !isBoardMember && (
+            <Link
+              href="/manage-team"
+              className={`relative px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 group ${
+                pathname === '/manage-team'
+                  ? 'bg-muted text-foreground'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+              }`}
+            >
+              <span className="relative z-10">Manage Team</span>
+            </Link>
+          )}
           
           {filteredAdminLinks.length > 0 && (
             isBoardMember ? (
@@ -244,20 +254,6 @@ export function Navbar() {
                       </DropdownMenuItem>
                     </>
                   )}
-          {canMarkAttendanceAccess && (
-                    <>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem asChild>
-                        <Link href="/mark-attendance" className="cursor-pointer flex items-center justify-between">
-                          <span className="flex items-center gap-2">
-                            <UserCheck className="h-4 w-4" />
-                            Mark Attendance
-                          </span>
-                          <ArrowRight className="h-4 w-4 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
-                        </Link>
-                      </DropdownMenuItem>
-                    </>
-                  )}
                 </DropdownMenuContent>
               </DropdownMenu>
             )
@@ -297,9 +293,11 @@ export function Navbar() {
                           ? 'role-admin' 
                           : user.role === 'boardmember'
                             ? 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300'
+                            : user.role === 'teamhead'
+                              ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300'
                             : 'role-employee'
                     }`}>
-                      {user.role === 'boardmember' ? 'Board Member' : user.role}
+                      {user.role === 'boardmember' ? 'Board Member' : user.role === 'teamhead' ? 'Team Head' : user.role}
                     </span>
                   </div>
                 </DropdownMenuLabel>
@@ -395,6 +393,20 @@ export function Navbar() {
                       {viewReportsLink.label}
                     </Link>
                   )}
+                  {showManageTeam && !isBoardMember && (
+                    <Link
+                      href="/manage-team"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
+                        pathname === '/manage-team'
+                          ? 'bg-muted text-foreground'
+                          : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
+                      }`}
+                    >
+                      <UserCheck className="h-4 w-4" />
+                      <span className="font-medium">Manage Team</span>
+                    </Link>
+                  )}
                   
                   {filteredAdminLinks.length > 0 && (
                     <>
@@ -433,20 +445,6 @@ export function Navbar() {
                         >
                           <CalendarDays className="h-4 w-4" />
                           Holidays
-                        </Link>
-                      )}
-                {canMarkAttendanceAccess && (
-                        <Link
-                          href="/mark-attendance"
-                          className={`flex items-center gap-3 px-4 py-3 text-sm rounded-lg transition-all duration-200 active-press ${
-                            pathname === '/mark-attendance'
-                              ? 'bg-foreground text-background font-medium' 
-                              : 'text-muted-foreground hover:text-foreground hover:bg-muted'
-                          }`}
-                          onClick={() => setMobileMenuOpen(false)}
-                        >
-                          <UserCheck className="h-4 w-4" />
-                          Mark Attendance
                         </Link>
                       )}
                     </>

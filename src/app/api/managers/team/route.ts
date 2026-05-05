@@ -26,8 +26,8 @@ export async function GET() {
 
     let employeesList: SafeEmployee[];
 
-    if (session.role === 'manager') {
-      // Managers see employees from their assigned departments
+    if (session.role === 'manager' || session.role === 'teamhead') {
+      // Managers/team heads see employees from their assigned departments
       employeesList = await getTeamEmployeesForManager(session.id);
     } else if (session.department === 'Operations') {
       // Operations users: if they have departments assigned, show only those; otherwise show all employees
