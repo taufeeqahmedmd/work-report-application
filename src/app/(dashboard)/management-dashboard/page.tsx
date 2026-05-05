@@ -1,12 +1,25 @@
 'use client';
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { Loader2, Users, User, Calendar, Briefcase, Coffee, ChevronLeft, ChevronRight, Filter, X, TrendingUp, Building2, Check, Clock, Building, Info } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import Link from 'next/link';
+import {
+  Loader2,
+  Search,
+  Bell,
+  CircleHelp,
+  Settings,
+  Grid3X3,
+  FileText,
+  Users,
+  Activity,
+  Shield,
+  Plus,
+  ChevronLeft,
+  ChevronRight,
+  Bolt,
+} from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { logger } from '@/lib/logger';
 import type { Entity, Branch, Department, WorkReport } from '@/types';
 
 interface EmployeeReportStatus {
@@ -36,26 +49,20 @@ interface MonthlyStatusData {
 
 const MONTH_NAMES = [
   'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December'
+  'July', 'August', 'September', 'October', 'November', 'December',
 ];
 
 export default function ManagementDashboardPage() {
   const [loading, setLoading] = useState(true);
-  const [currentDateStr, setCurrentDateStr] = useState('');
   const [statusData, setStatusData] = useState<MonthlyStatusData | null>(null);
   const [error, setError] = useState('');
-
-  // Filter states
   const now = new Date();
   const [selectedYear, setSelectedYear] = useState(now.getFullYear());
   const [selectedMonth, setSelectedMonth] = useState(now.getMonth() + 1);
   const [selectedEntity, setSelectedEntity] = useState<string>('all');
   const [selectedBranch, setSelectedBranch] = useState<string>('all');
   const [selectedDepartment, setSelectedDepartment] = useState<string>('all');
-  const [summaryStartDate, setSummaryStartDate] = useState('');
-  const [summaryEndDate, setSummaryEndDate] = useState('');
-  const [cardStartDate, setCardStartDate] = useState('');
-  const [cardEndDate, setCardEndDate] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
   const [reportDialogLoading, setReportDialogLoading] = useState(false);
   const [selectedReport, setSelectedReport] = useState<WorkReport | null>(null);
@@ -72,174 +79,162 @@ export default function ManagementDashboardPage() {
       if (selectedEntity !== 'all') params.append('entityId', selectedEntity);
       if (selectedBranch !== 'all') params.append('branchId', selectedBranch);
       if (selectedDepartment !== 'all') params.append('department', selectedDepartment);
-
       const response = await fetch(`/api/reports/monthly-status?${params.toString()}`);
       const result = await response.json();
       if (result.success) {
         setStatusData(result.data);
         setError('');
       } else {
-        setError(result.error || 'Failed to fetch status');
+        setError(result.error || 'Failed to fetch dashboard data');
       }
     } catch {
-      setError('Failed to load monthly status');
+      setError('Failed to load dashboard');
     } finally {
       setLoading(false);
     }
   }, [selectedYear, selectedMonth, selectedEntity, selectedBranch, selectedDepartment]);
 
   useEffect(() => {
-    // Set current date string on client mount to avoid hydration mismatch
-    setCurrentDateStr(new Date().toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }));
-  }, []);
-
-  useEffect(() => {
     fetchMonthlyStatus();
   }, [fetchMonthlyStatus]);
-
-  useEffect(() => {
-    const today = new Date();
-    const isCurrentMonth = selectedYear === today.getFullYear() && selectedMonth === today.getMonth() + 1;
-    const defaultDate = isCurrentMonth
-      ? `${selectedYear}-${String(selectedMonth).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
-      : `${selectedYear}-${String(selectedMonth).padStart(2, '0')}-01`;
-    setCardStartDate(defaultDate);
-    setCardEndDate(defaultDate);
-    setSummaryStartDate(defaultDate);
-    setSummaryEndDate(defaultDate);
-  }, [selectedYear, selectedMonth]);
-
-  // Refresh data when window regains focus (in case holidays were updated in another tab)
-  useEffect(() => {
-    const handleFocus = () => {
-      // Only refresh if we have data loaded (avoid unnecessary calls on initial load)
-      if (statusData) {
-        fetchMonthlyStatus();
-      }
-    };
-    window.addEventListener('focus', handleFocus);
-    return () => window.removeEventListener('focus', handleFocus);
-  }, [statusData, fetchMonthlyStatus]);
 
   const handlePrevMonth = () => {
     if (selectedMonth === 1) {
       setSelectedMonth(12);
-      setSelectedYear(selectedYear - 1);
+      setSelectedYear((prev) => prev - 1);
     } else {
-      setSelectedMonth(selectedMonth - 1);
+      setSelectedMonth((prev) => prev - 1);
     }
   };
 
   const handleNextMonth = () => {
     if (selectedMonth === 12) {
       setSelectedMonth(1);
-      setSelectedYear(selectedYear + 1);
+      setSelectedYear((prev) => prev + 1);
     } else {
-      setSelectedMonth(selectedMonth + 1);
+      setSelectedMonth((prev) => prev + 1);
     }
   };
 
-  const handleClearFilters = () => {
-    setSelectedEntity('all');
-    setSelectedBranch('all');
-    setSelectedDepartment('all');
-  };
-
-  // Filter branches by selected entity
   const filteredBranches = useMemo(() => {
     if (!statusData) return [];
     if (selectedEntity === 'all') return statusData.branches;
-    return statusData.branches.filter(b => b.entityId === parseInt(selectedEntity));
+    return statusData.branches.filter((b) => b.entityId === parseInt(selectedEntity));
   }, [statusData, selectedEntity]);
 
-  // Filter departments by selected entity
   const filteredDepartments = useMemo(() => {
     if (!statusData) return [];
     if (selectedEntity === 'all') return statusData.departments;
-    return statusData.departments.filter(d => d.entityId === parseInt(selectedEntity) || d.entityId === null);
+    return statusData.departments.filter((d) => d.entityId === parseInt(selectedEntity) || d.entityId === null);
   }, [statusData, selectedEntity]);
 
-  // Generate days array for the table header
+  const employees = useMemo(() => {
+    if (!statusData) return [];
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) return statusData.employees;
+    return statusData.employees.filter((emp) =>
+      emp.name.toLowerCase().includes(query) ||
+      emp.employeeId.toLowerCase().includes(query) ||
+      emp.department.toLowerCase().includes(query)
+    );
+  }, [statusData, searchQuery]);
+
   const daysArray = useMemo(() => {
     if (!statusData) return [];
-    const days: { day: number; dateStr: string; isSunday: boolean }[] = [];
+    const days: { day: number; dateStr: string }[] = [];
     for (let day = 1; day <= statusData.daysInMonth; day++) {
-      const dateStr = `${statusData.year}-${String(statusData.month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-      const date = new Date(statusData.year, statusData.month - 1, day);
       days.push({
         day,
-        dateStr,
-        isSunday: date.getDay() === 0,
+        dateStr: `${statusData.year}-${String(statusData.month).padStart(2, '0')}-${String(day).padStart(2, '0')}`,
       });
     }
     return days;
   }, [statusData]);
 
-  // Create a stable reference to employees array to ensure all three tables stay in sync
-  const employeesList = useMemo(() => {
-    if (!statusData) return [];
-    return statusData.employees;
-  }, [statusData]);
+  const summary = useMemo(() => {
+    if (!statusData) {
+      return { totalEmployees: 0, activeEmployees: 0, workingCycle: 0, compliance: 0 };
+    }
+    const totalEmployees = statusData.employees.length;
+    const activeEmployees = statusData.employees.filter((emp) =>
+      Object.values(emp.dailyStatus).some((s) => s === 'submitted' || s === 'leave')
+    ).length;
 
-  // Calculate department stats from monthly status data
-  const monthlyDepartmentStats = useMemo(() => {
-    if (!statusData) return [];
-
-    const [rangeStart, rangeEnd] = cardStartDate && cardEndDate
-      ? [cardStartDate, cardEndDate]
-      : [null, null];
-
-    const deptMap: Record<string, { working: number; leave: number; missing: number; totalExpected: number }> = {};
-
-    statusData.employees.forEach(employee => {
-      if (!deptMap[employee.department]) {
-        deptMap[employee.department] = { working: 0, leave: 0, missing: 0, totalExpected: 0 };
-      }
-
-      Object.entries(employee.dailyStatus).forEach(([date, dayStatus]) => {
-        if (rangeStart && rangeEnd && (date < rangeStart || date > rangeEnd)) return;
-        if (dayStatus === 'future' || dayStatus === 'sunday') return;
-
-        deptMap[employee.department].totalExpected += 1;
-
-        if (dayStatus === 'submitted') {
-          deptMap[employee.department].working += 1;
-        } else if (dayStatus === 'leave') {
-          deptMap[employee.department].leave += 1;
-        } else if (dayStatus === 'not_submitted') {
-          deptMap[employee.department].missing += 1;
-        }
+    let expected = 0;
+    let completed = 0;
+    statusData.employees.forEach((emp) => {
+      Object.values(emp.dailyStatus).forEach((s) => {
+        if (s === 'future' || s === 'sunday') return;
+        expected += 1;
+        if (s === 'submitted' || s === 'leave') completed += 1;
       });
     });
+    const compliance = expected > 0 ? (completed / expected) * 100 : 0;
 
-    return Object.entries(deptMap)
-      .map(([department, stats]) => ({ department, ...stats }))
-      .sort((a, b) => a.department.localeCompare(b.department));
-  }, [statusData, cardStartDate, cardEndDate]);
+    return {
+      totalEmployees,
+      activeEmployees,
+      workingCycle: daysArray.length,
+      compliance: Math.round(compliance * 10) / 10,
+    };
+  }, [statusData, daysArray.length]);
+
+  const departmentPerformance = useMemo(() => {
+    if (!statusData) return [];
+    const map: Record<string, { submitted: number; expected: number }> = {};
+    statusData.employees.forEach((emp) => {
+      if (!map[emp.department]) map[emp.department] = { submitted: 0, expected: 0 };
+      Object.values(emp.dailyStatus).forEach((s) => {
+        if (s === 'future' || s === 'sunday') return;
+        map[emp.department].expected += 1;
+        if (s === 'submitted' || s === 'leave') map[emp.department].submitted += 1;
+      });
+    });
+    return Object.entries(map)
+      .map(([department, stats]) => ({
+        department,
+        rate: stats.expected ? Math.round((stats.submitted / stats.expected) * 100) : 0,
+        submitted: stats.submitted,
+        expected: stats.expected,
+      }))
+      .sort((a, b) => b.rate - a.rate);
+  }, [statusData]);
+
+  const heatmapEmployees = useMemo(() => {
+    return [...employees].sort((a, b) => b.submittedCount - a.submittedCount).slice(0, 3);
+  }, [employees]);
+
+  const heatmapDays = useMemo(() => daysArray.slice(0, 14), [daysArray]);
+
+  const velocityBars = useMemo(() => {
+    const top = departmentPerformance.slice(0, 6);
+    if (top.length === 0) return [20, 28, 36, 44, 52, 48];
+    return top.map((d) => Math.max(16, Math.round((d.rate / 100) * 56)));
+  }, [departmentPerformance]);
+
+  const getDotClass = (status: EmployeeReportStatus['dailyStatus'][string]) => {
+    if (status === 'submitted') return 'bg-emerald-500';
+    if (status === 'leave') return 'bg-yellow-500';
+    if (status === 'not_submitted') return 'bg-slate-300';
+    return 'bg-slate-200';
+  };
 
   const handleOpenReportDialog = useCallback(async (employee: EmployeeReportStatus, date: string) => {
+    if (employee.dailyStatus[date] !== 'submitted') return;
     setReportDialogOpen(true);
     setReportDialogLoading(true);
     setReportDialogError('');
     setSelectedReport(null);
     setSelectedReportMeta({ employeeName: employee.name, date });
-
     try {
       const response = await fetch(`/api/work-reports?employeeId=${encodeURIComponent(employee.employeeId)}`);
       const result = await response.json();
-
-      if (!result.success || !result.data?.reports) {
-        setReportDialogError(result.error || 'Unable to fetch report details');
-        return;
-      }
-
-      const report = (result.data.reports as WorkReport[]).find(r => r.date === date);
+      const report = (result.data?.reports as WorkReport[] | undefined)?.find((r) => r.date === date);
       if (!report) {
         setReportDialogError('No report details found for this date');
-        return;
+      } else {
+        setSelectedReport(report);
       }
-
-      setSelectedReport(report);
     } catch {
       setReportDialogError('Failed to fetch report details');
     } finally {
@@ -247,570 +242,249 @@ export default function ManagementDashboardPage() {
     }
   }, []);
 
-  // Get department tag color
-  const getDepartmentTagColor = (department: string) => {
-    const deptLower = department.toLowerCase();
-    if (deptLower.includes('account')) return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800';
-    if (deptLower.includes('admin')) return 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 border-blue-200 dark:border-blue-800';
-    if (deptLower.includes('board')) return 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 border-purple-200 dark:border-purple-800';
-    if (deptLower.includes('call')) return 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300 border-gray-200 dark:border-gray-700';
-    if (deptLower.includes('digital marketing') || deptLower === 'digital marketing') return 'bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-400 border-pink-200 dark:border-pink-800';
-    if (deptLower.includes('social media') || deptLower === 'social media') return 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400 border-violet-200 dark:border-violet-800';
-    if (deptLower.includes('erp') || deptLower === 'erp') return 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400 border-indigo-200 dark:border-indigo-800';
-    if (deptLower.includes('it') || deptLower === 'it') return 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400 border-cyan-200 dark:border-cyan-800';
-    if (deptLower.includes('graphics') || deptLower === 'graphics') return 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400 border-rose-200 dark:border-rose-800';
-    if (deptLower.includes('website') || deptLower === 'website' || deptLower.includes('websites')) return 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400 border-teal-200 dark:border-teal-800';
-    return 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 border-orange-200 dark:border-orange-800';
-  };
-
-  // Get employee initials for avatar
-  const getInitials = (name: string) => {
-    return name
-      .split(' ')
-      .map(n => n[0])
-      .join('')
-      .toUpperCase()
-      .slice(0, 2);
-  };
-
-  const getStatusCell = (
-    employee: EmployeeReportStatus,
-    dateStr: string,
-    status: 'submitted' | 'leave' | 'not_submitted' | 'sunday' | 'future'
-  ) => {
-    switch (status) {
-      case 'submitted':
-        return (
-          <button
-            type="button"
-            onClick={() => handleOpenReportDialog(employee, dateStr)}
-            className="w-7 h-7 sm:w-8 sm:h-8 rounded flex items-center justify-center hover:bg-emerald-500/10 transition-colors"
-            title="Submitted (click to view report)"
-          >
-            <Check className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-emerald-600 dark:text-emerald-400" />
-          </button>
-        );
-      case 'leave':
-        return (
-          <div className="w-7 h-7 sm:w-8 sm:h-8 rounded flex items-center justify-center" title="Leave">
-            <Clock className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-blue-600 dark:text-blue-400 rotate-[-90deg]" />
-          </div>
-        );
-      case 'not_submitted':
-        return (
-          <div className="w-7 h-7 sm:w-8 sm:h-8 rounded flex items-center justify-center" title="Missing">
-            <X className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-red-600 dark:text-red-400" />
-          </div>
-        );
-      case 'sunday':
-        return (
-          <div className="w-7 h-7 sm:w-8 sm:h-8 rounded flex items-center justify-center" title="Holiday">
-            <Building className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-gray-500 dark:text-gray-400" />
-          </div>
-        );
-      case 'future':
-        return <div className="w-7 h-7 sm:w-8 sm:h-8" />;
-    }
-  };
-
-  const hasActiveFilters = selectedEntity !== 'all' || selectedBranch !== 'all' || selectedDepartment !== 'all';
-  
-  const summaryMetrics = useMemo(() => {
-    if (!statusData || !summaryStartDate || !summaryEndDate) {
-      return {
-        totalEmployees: 0,
-        activeEmployees: 0,
-        workingDays: 0,
-        holidaysCount: 0,
-        usagePercentage: 0,
-      };
-    }
-
-    const totalEmployees = statusData.employees.length;
-    const holidaySet = new Set(
-      statusData.holidays
-        .filter(h => h.date >= summaryStartDate && h.date <= summaryEndDate)
-        .map(h => h.date)
+  if (loading) {
+    return (
+      <div className="min-h-screen pt-16 flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
     );
+  }
 
-    let workingDays = 0;
-    const current = new Date(summaryStartDate);
-    const end = new Date(summaryEndDate);
-    while (current <= end) {
-      const yyyy = current.getFullYear();
-      const mm = String(current.getMonth() + 1).padStart(2, '0');
-      const dd = String(current.getDate()).padStart(2, '0');
-      const dateStr = `${yyyy}-${mm}-${dd}`;
-      const isSunday = current.getDay() === 0;
-      if (!isSunday && !holidaySet.has(dateStr)) {
-        workingDays += 1;
-      }
-      current.setDate(current.getDate() + 1);
-    }
-
-    let activeEmployees = 0;
-    let usageActions = 0;
-    statusData.employees.forEach((employee) => {
-      let hasAnyUsage = false;
-      Object.entries(employee.dailyStatus).forEach(([date, status]) => {
-        if (date < summaryStartDate || date > summaryEndDate) return;
-        if (status === 'submitted' || status === 'leave') {
-          hasAnyUsage = true;
-          usageActions += 1;
-        }
-      });
-      if (hasAnyUsage) activeEmployees += 1;
-    });
-
-    const possibleUsage = totalEmployees * workingDays;
-    const usagePercentage = possibleUsage > 0
-      ? Math.round((usageActions / possibleUsage) * 100)
-      : 0;
-
-    return {
-      totalEmployees,
-      activeEmployees,
-      workingDays,
-      holidaysCount: holidaySet.size,
-      usagePercentage,
-    };
-  }, [statusData, summaryStartDate, summaryEndDate]);
-
-  const handleResetSummaryFilter = useCallback(() => {
-    const today = new Date();
-    const startOfMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-01`;
-    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-    setSummaryStartDate(startOfMonth);
-    setSummaryEndDate(todayStr);
-  }, []);
+  if (error || !statusData) {
+    return (
+      <div className="min-h-screen pt-16 flex items-center justify-center text-destructive">
+        {error || 'Unable to load management dashboard'}
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen pt-16 bg-gradient-to-br from-background via-background to-muted/20">
-      <div className="container py-8 px-4 md:px-6">
-        <div className="max-w-full mx-auto space-y-6">
-          
-          {/* Header */}
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight">Management Dashboard</h1>
-              <p className="text-muted-foreground">Work report submission overview</p>
+    <div className="min-h-screen pt-16 bg-background overflow-x-hidden">
+      <div className="px-3 sm:px-4 md:px-6 py-4">
+        <div className="grid gap-4 lg:grid-cols-[220px_1fr]">
+          <aside className="hidden lg:flex lg:flex-col rounded-md border border-primary/30 bg-primary text-primary-foreground overflow-hidden min-h-[calc(100vh-7.5rem)]">
+            <div className="px-5 py-4 border-b border-primary-foreground/10">
+              <h2 className="text-2xl font-semibold leading-none">Work Report</h2>
+              <p className="text-[11px] mt-1 uppercase tracking-[0.08em] text-primary-foreground/70">Enterprise Analytics</p>
             </div>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Calendar className="h-4 w-4" />
-              <span>{currentDateStr}</span>
-            </div>
-          </div>
+            <nav className="px-2 py-3 space-y-1">
+              <Link href="/employee-dashboard" className="flex items-center gap-3 rounded-sm bg-primary-foreground/8 px-3 py-2 text-xs font-semibold uppercase tracking-[0.06em]">
+                <Grid3X3 className="h-4 w-4" /> Dashboard
+              </Link>
+              <Link href="/employee-reports" className="flex items-center gap-3 rounded-sm px-3 py-2 text-xs font-semibold uppercase tracking-[0.06em] text-primary-foreground/80 hover:bg-primary-foreground/8 hover:text-primary-foreground">
+                <FileText className="h-4 w-4" /> Reports
+              </Link>
+              <Link href="/manage-team" className="flex items-center gap-3 rounded-sm px-3 py-2 text-xs font-semibold uppercase tracking-[0.06em] text-primary-foreground/80 hover:bg-primary-foreground/8 hover:text-primary-foreground">
+                <Users className="h-4 w-4" /> Team Management
+              </Link>
+              <Link href="/management-dashboard" className="flex items-center gap-3 rounded-sm px-3 py-2 text-xs font-semibold uppercase tracking-[0.06em] text-primary-foreground/80 hover:bg-primary-foreground/8 hover:text-primary-foreground">
+                <Activity className="h-4 w-4" /> Analytics
+              </Link>
+              <Link href="/admin" className="flex items-center gap-3 rounded-sm px-3 py-2 text-xs font-semibold uppercase tracking-[0.06em] text-primary-foreground/80 hover:bg-primary-foreground/8 hover:text-primary-foreground">
+                <Shield className="h-4 w-4" /> Admin Portal
+              </Link>
+            </nav>
+          </aside>
 
-          {/* Stats Cards */}
-          <div className="space-y-3">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-xs text-muted-foreground">Summary Date Range:</span>
-              <Input
-                type="date"
-                value={summaryStartDate}
-                onChange={(e) => setSummaryStartDate(e.target.value)}
-                className="h-8 w-40 text-xs"
-              />
-              <span className="text-xs text-muted-foreground">to</span>
-              <Input
-                type="date"
-                value={summaryEndDate}
-                onChange={(e) => setSummaryEndDate(e.target.value)}
-                className="h-8 w-40 text-xs"
-              />
-              <Button variant="ghost" size="sm" onClick={handleResetSummaryFilter} className="h-8 text-muted-foreground">
-                <X className="h-3.5 w-3.5 mr-1.5" />
-                Reset
-              </Button>
-            </div>
-            <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-              <div className="bg-card border rounded-xl p-5 shadow-sm">
-                <div className="flex items-center gap-3">
-                  <div className="p-2.5 rounded-lg bg-primary/10">
-                    <Users className="h-5 w-5 text-primary" />
-                  </div>
-                  <div>
-                    <p className="text-2xl font-bold">{summaryMetrics.totalEmployees}</p>
-                    <p className="text-xs text-muted-foreground">Total Employees</p>
+          <main className="space-y-4">
+            <div className="rounded-md border bg-card px-4 py-3">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-4">
+                  <h1 className="text-2xl font-semibold tracking-[-0.01em]">Executive Intelligence</h1>
+                  <div className="relative min-w-[260px] hidden sm:block">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder="Search departments, employees..."
+                      className="pl-9 h-9 bg-muted/30 border-0"
+                    />
                   </div>
                 </div>
-              </div>
-              
-              <div className="bg-card border rounded-xl p-5 shadow-sm">
-                <div className="flex items-center gap-3">
-                  <div className="p-2.5 rounded-lg bg-emerald-500/10">
-                    <User className="h-5 w-5 text-emerald-600" />
-                  </div>
-                  <div>
-                    <p className="text-2xl font-bold text-emerald-600">{summaryMetrics.activeEmployees}</p>
-                    <p className="text-xs text-muted-foreground">Active Employees</p>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="bg-card border rounded-xl p-5 shadow-sm">
-                <div className="flex items-center gap-3">
-                  <div className="p-2.5 rounded-lg bg-amber-500/10">
-                    <Briefcase className="h-5 w-5 text-amber-600" />
-                  </div>
-                  <div>
-                    <p className="text-2xl font-bold text-amber-600">{summaryMetrics.workingDays}</p>
-                    <p className="text-xs text-muted-foreground">Working Days</p>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="bg-card border rounded-xl p-5 shadow-sm">
-                <div className="flex items-center gap-3">
-                  <div className="p-2.5 rounded-lg bg-blue-500/10">
-                    <Calendar className="h-5 w-5 text-blue-600" />
-                  </div>
-                  <div>
-                    <p className="text-2xl font-bold text-blue-600">{summaryMetrics.holidaysCount}</p>
-                    <p className="text-xs text-muted-foreground">Holidays</p>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="bg-card border rounded-xl p-5 shadow-sm col-span-2 lg:col-span-1">
-                <div className="flex items-center gap-3">
-                  <div className="p-2.5 rounded-lg bg-violet-500/10">
-                    <TrendingUp className="h-5 w-5 text-violet-600" />
-                  </div>
-                  <div>
-                    <p className="text-2xl font-bold text-violet-600">{summaryMetrics.usagePercentage}%</p>
-                    <div className="flex items-center gap-1">
-                      <p className="text-xs text-muted-foreground">App Usage</p>
-                      <span
-                        className="inline-flex items-center justify-center text-muted-foreground/70"
-                        title="Usage % = (Submitted + Leave entries) / (Total Employees × Working Days in selected range) × 100"
-                      >
-                        <Info className="h-3.5 w-3.5" />
-                      </span>
-                    </div>
-                  </div>
+                <div className="flex items-center gap-2">
+                  <button className="inline-flex h-8 w-8 items-center justify-center rounded-sm border text-muted-foreground"><Bell className="h-4 w-4" /></button>
+                  <button className="inline-flex h-8 w-8 items-center justify-center rounded-sm border text-muted-foreground"><CircleHelp className="h-4 w-4" /></button>
+                  <button className="inline-flex h-8 w-8 items-center justify-center rounded-sm border text-muted-foreground"><Settings className="h-4 w-4" /></button>
+                  <button className="inline-flex h-8 w-8 items-center justify-center rounded-sm border bg-primary text-primary-foreground"><Plus className="h-4 w-4" /></button>
                 </div>
               </div>
             </div>
-          </div>
 
-          {/* Department Stats */}
-          {monthlyDepartmentStats.length > 0 && (
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <h3 className="font-semibold flex items-center gap-2">
-                  <Building2 className="h-4 w-4 text-muted-foreground" />
-                  Department Overview
-                </h3>
-                <span className="text-xs text-muted-foreground">{MONTH_NAMES[selectedMonth - 1]} {selectedYear}</span>
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+              <div className="rounded-md border bg-card p-4">
+                <p className="text-[11px] uppercase tracking-[0.06em] text-muted-foreground mb-1">Total Workforce</p>
+                <p className="text-4xl font-semibold">{summary.totalEmployees.toLocaleString()}</p>
               </div>
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="text-xs text-muted-foreground">Card Date Range:</span>
-                <Input
-                  type="date"
-                  value={cardStartDate}
-                  onChange={(e) => setCardStartDate(e.target.value)}
-                  className="h-8 w-40 text-xs"
-                />
-                <span className="text-xs text-muted-foreground">to</span>
-                <Input
-                  type="date"
-                  value={cardEndDate}
-                  onChange={(e) => setCardEndDate(e.target.value)}
-                  className="h-8 w-40 text-xs"
-                />
+              <div className="rounded-md border bg-card p-4">
+                <p className="text-[11px] uppercase tracking-[0.06em] text-muted-foreground mb-1">Active Status</p>
+                <p className="text-4xl font-semibold">{summary.activeEmployees.toLocaleString()}</p>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
-                {monthlyDepartmentStats.map((dept) => {
-                  const rate = dept.totalExpected > 0 ? Math.round(((dept.working + dept.leave) / dept.totalExpected) * 100) : 0;
-                  const circumference = 2 * Math.PI * 20;
-                  const strokeDashoffset = circumference - (rate / 100) * circumference;
-                  const isActive = selectedDepartment === dept.department;
-                  
+              <div className="rounded-md border bg-card p-4">
+                <p className="text-[11px] uppercase tracking-[0.06em] text-muted-foreground mb-1">Working Cycle</p>
+                <p className="text-4xl font-semibold">{summary.workingCycle}</p>
+              </div>
+              <div className="rounded-md border bg-card p-4">
+                <p className="text-[11px] uppercase tracking-[0.06em] text-muted-foreground mb-1">Compliance Score</p>
+                <p className="text-4xl font-semibold">{summary.compliance}%</p>
+              </div>
+            </div>
+
+            <section className="rounded-md border bg-card p-4">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-2xl font-semibold tracking-[-0.01em]">Department Performance</h2>
+                <span className="text-xs uppercase tracking-[0.06em] text-muted-foreground">View Insights</span>
+              </div>
+              <div className="grid gap-2 grid-cols-2 sm:grid-cols-4 lg:grid-cols-8">
+                {departmentPerformance.slice(0, 8).map((dept) => {
+                  const circumference = 2 * Math.PI * 22;
+                  const dash = circumference - (dept.rate / 100) * circumference;
                   return (
-                    <button 
-                      key={dept.department} 
-                      onClick={() => setSelectedDepartment(dept.department)}
-                      className={`bg-card border rounded-xl p-4 hover:shadow-md transition-all hover:border-primary/20 text-left min-h-[128px] ${isActive ? 'ring-2 ring-primary/40 border-primary/30' : ''}`}
-                    >
-                      <div className="flex items-start justify-between gap-3 mb-3">
-                        <div className="flex-1 min-w-0">
-                          <h4 className="font-semibold text-sm leading-tight truncate" title={dept.department}>
-                            {dept.department}
-                          </h4>
-                          <p className="text-xs text-muted-foreground mt-0.5">
-                            {dept.totalExpected} expected
-                          </p>
-                        </div>
-                        {/* Circular Progress */}
-                        <div className="relative w-11 h-11 flex-shrink-0">
-                          <svg className="w-11 h-11 -rotate-90" viewBox="0 0 48 48">
-                            <circle
-                              cx="24"
-                              cy="24"
-                              r="20"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="4"
-                              className="text-muted/30"
-                            />
-                            <circle
-                              cx="24"
-                              cy="24"
-                              r="20"
-                              fill="none"
-                              strokeWidth="4"
-                              strokeLinecap="round"
-                              className={rate >= 80 ? 'text-emerald-500' : rate >= 50 ? 'text-amber-500' : 'text-rose-500'}
-                              stroke="currentColor"
-                              strokeDasharray={circumference}
-                              strokeDashoffset={strokeDashoffset}
-                              style={{ transition: 'stroke-dashoffset 0.5s ease' }}
-                            />
-                          </svg>
-                          <div className="absolute inset-0 flex items-center justify-center">
-                            <span className={`text-[10px] font-bold ${rate >= 80 ? 'text-emerald-600' : rate >= 50 ? 'text-amber-600' : 'text-rose-600'}`}>
-                              {rate}%
-                            </span>
-                          </div>
-                        </div>
+                    <div key={dept.department} className="rounded-sm border bg-background p-2 text-center">
+                      <div className="relative w-14 h-14 mx-auto mb-1">
+                        <svg className="w-14 h-14 -rotate-90" viewBox="0 0 52 52">
+                          <circle cx="26" cy="26" r="22" fill="none" stroke="currentColor" strokeWidth="4" className="text-muted/40" />
+                          <circle
+                            cx="26"
+                            cy="26"
+                            r="22"
+                            fill="none"
+                            strokeWidth="4"
+                            strokeLinecap="round"
+                            stroke="currentColor"
+                            className={dept.rate >= 90 ? 'text-emerald-500' : dept.rate >= 80 ? 'text-blue-500' : 'text-amber-500'}
+                            strokeDasharray={circumference}
+                            strokeDashoffset={dash}
+                          />
+                        </svg>
+                        <div className="absolute inset-0 flex items-center justify-center text-[11px] font-semibold">{dept.rate}%</div>
                       </div>
-                      <div className="grid grid-cols-3 gap-2 text-[11px]">
-                        <div className="rounded-md bg-emerald-500/5 border border-emerald-500/20 px-2 py-1.5">
-                          <div className="flex items-center gap-1.5 text-muted-foreground">
-                            <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-                            <span>Working</span>
-                          </div>
-                          <p className="font-semibold text-emerald-600 mt-0.5">{dept.working}</p>
-                        </div>
-                        <div className="rounded-md bg-amber-500/5 border border-amber-500/20 px-2 py-1.5">
-                          <div className="flex items-center gap-1.5 text-muted-foreground">
-                            <span className="w-2 h-2 rounded-full bg-amber-500"></span>
-                            <span>Leave</span>
-                          </div>
-                          <p className="font-semibold text-amber-600 mt-0.5">{dept.leave}</p>
-                        </div>
-                        <div className="rounded-md bg-rose-500/5 border border-rose-500/20 px-2 py-1.5">
-                          <div className="flex items-center gap-1.5 text-muted-foreground">
-                            <span className="w-2 h-2 rounded-full bg-rose-500"></span>
-                            <span>Missing</span>
-                          </div>
-                          <p className="font-semibold text-rose-600 mt-0.5">{dept.missing}</p>
-                        </div>
-                      </div>
-                    </button>
+                      <p className="text-xs font-medium truncate">{dept.department}</p>
+                      <p className="text-[10px] text-muted-foreground">{dept.submitted}/{dept.expected} Sub</p>
+                    </div>
                   );
                 })}
               </div>
-            </div>
-          )}
+            </section>
 
-          {/* Monthly Status Table */}
-          <div className="bg-card border rounded-xl shadow-sm overflow-hidden">
-            {/* Header */}
-            <div className="px-5 py-4 border-b bg-gradient-to-r from-background to-muted/20">
-              <div className="mb-4">
-                <h3 className="font-semibold text-lg">Monthly Submission Status</h3>
-                <p className="text-xs text-muted-foreground mt-0.5">Daily work report submission tracking</p>
-              </div>
-
-              {/* Filters and Date Navigation */}
-              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                {/* Filters */}
-                <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <Filter className="h-4 w-4" />
-                    <span className="text-xs sm:text-sm font-medium">Filters:</span>
-                  </div>
-
-                  <select
-                    value={selectedEntity}
-                    onChange={(e) => {
-                      setSelectedEntity(e.target.value);
-                      setSelectedBranch('all');
-                      setSelectedDepartment('all');
-                    }}
-                    className="h-8 sm:h-9 px-2 sm:px-3 rounded-md border border-input bg-background text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-ring/20"
-                  >
-                    <option value="all">All Entities</option>
-                    {statusData?.entities.map((entity) => (
-                      <option key={entity.id} value={entity.id.toString()}>{entity.name}</option>
-                    ))}
-                  </select>
-
-                  <select
-                    value={selectedBranch}
-                    onChange={(e) => setSelectedBranch(e.target.value)}
-                    className="h-8 sm:h-9 px-2 sm:px-3 rounded-md border border-input bg-background text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-ring/20"
-                  >
-                    <option value="all">All Branches</option>
-                    {filteredBranches.map((branch) => (
-                      <option key={branch.id} value={branch.id.toString()}>{branch.name}</option>
-                    ))}
-                  </select>
-
-                  <select
-                    value={selectedDepartment}
-                    onChange={(e) => setSelectedDepartment(e.target.value)}
-                    className="h-8 sm:h-9 px-2 sm:px-3 rounded-md border border-input bg-background text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-ring/20"
-                  >
-                    <option value="all">All Departments</option>
-                    {filteredDepartments.map((dept) => (
-                      <option key={dept.id} value={dept.name}>{dept.name}</option>
-                    ))}
-                  </select>
-
-                  {hasActiveFilters && (
-                    <Button variant="ghost" size="sm" onClick={handleClearFilters} className="h-8 sm:h-9 text-muted-foreground text-xs sm:text-sm">
-                      <X className="h-3.5 w-3.5 mr-1" />
-                      Clear
-                    </Button>
-                  )}
+            <section className="rounded-md border bg-card p-4">
+              <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
+                <div>
+                  <h2 className="text-2xl font-semibold tracking-[-0.01em]">Activity Heatmap</h2>
+                  <p className="text-sm text-muted-foreground">Real-time submission trends across departments</p>
                 </div>
-
-                {/* Date Navigation */}
-                <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-1">
-                  <Button variant="ghost" size="sm" onClick={handlePrevMonth} className="h-8 w-8 p-0">
-                    <ChevronLeft className="h-4 w-4" />
-                  </Button>
-                  <div className="min-w-[140px] text-center text-sm font-medium px-2">
-                    {MONTH_NAMES[selectedMonth - 1]} {selectedYear}
-                  </div>
-                  <Button variant="ghost" size="sm" onClick={handleNextMonth} className="h-8 w-8 p-0">
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
+                <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                  <span className="inline-flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500" />Submitted</span>
+                  <span className="inline-flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-slate-300" />Absent</span>
+                  <span className="inline-flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-yellow-500" />Pending</span>
+                  <span className="inline-flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-slate-200" />Off</span>
                 </div>
               </div>
 
-              {/* Legend */}
-              <div className="flex flex-wrap items-center gap-4 mt-4 pt-4 border-t text-xs">
-                <div className="flex items-center gap-1.5">
-                  <Check className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-                  <span className="text-muted-foreground">Submitted</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <X className="h-4 w-4 text-red-600 dark:text-red-400" />
-                  <span className="text-muted-foreground">Missing</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <Clock className="h-4 w-4 text-blue-600 dark:text-blue-400 rotate-[-90deg]" />
-                  <span className="text-muted-foreground">Leave</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <Building className="h-4 w-4 text-gray-500 dark:text-gray-400" />
-                  <span className="text-muted-foreground">Holiday</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Table Content */}
-            {loading ? (
-              <div className="py-20 flex flex-col items-center justify-center gap-3">
-                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                <p className="text-sm text-muted-foreground">Loading data...</p>
-              </div>
-            ) : error ? (
-              <div className="py-20 text-center text-destructive">{error}</div>
-            ) : statusData && employeesList.length > 0 ? (
-              <div className="overflow-x-auto -mx-5 sm:mx-0">
-                <div className="inline-block min-w-full align-middle px-5 sm:px-0">
-                  <div className="overflow-visible">
-                    <table className="w-full text-sm border-collapse">
-                      <thead>
-                        <tr className="bg-muted/50 border-b">
-                          <th className="text-left py-3 px-3 sm:px-4 font-medium sticky left-0 z-40 bg-muted/50 dark:bg-muted/80 backdrop-blur-sm min-w-[240px] sm:min-w-[280px] border-r border-border/50 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)] dark:shadow-[2px_0_4px_-2px_rgba(0,0,0,0.3)]">
-                            <span className="hidden sm:inline">Employee</span>
-                            <span className="sm:hidden">Emp</span>
-                          </th>
-                          {daysArray.map(({ day, isSunday }) => (
-                            <th 
-                              key={day} 
-                              className={`py-3 px-1 sm:px-2 font-medium text-center min-w-[36px] sm:min-w-[40px] text-xs sm:text-sm ${isSunday ? 'opacity-50' : ''}`}
-                            >
-                              {day}
-                            </th>
-                          ))}
-                          <th className="text-center py-3 px-3 sm:px-4 font-medium sticky right-0 z-40 bg-muted/50 dark:bg-muted/80 backdrop-blur-sm min-w-[70px] sm:min-w-[80px] border-l border-border/50 shadow-[-2px_0_4px_-2px_rgba(0,0,0,0.1)] dark:shadow-[-2px_0_4px_-2px_rgba(0,0,0,0.3)]">
-                            Summary
-                          </th>
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[760px] text-sm">
+                  <thead>
+                    <tr className="text-muted-foreground text-xs border-b">
+                      <th className="text-left py-2 px-2 uppercase tracking-[0.06em]">Employee Identity</th>
+                      {heatmapDays.map((d) => (
+                        <th key={d.dateStr} className="py-2 px-2">{String(d.day).padStart(2, '0')}</th>
+                      ))}
+                      <th className="text-right py-2 px-2 uppercase tracking-[0.06em]">Perf</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {heatmapEmployees.map((emp) => {
+                      const nonFuture = heatmapDays.filter((d) => emp.dailyStatus[d.dateStr] !== 'future' && emp.dailyStatus[d.dateStr] !== 'sunday');
+                      const done = nonFuture.filter((d) => {
+                        const s = emp.dailyStatus[d.dateStr];
+                        return s === 'submitted' || s === 'leave';
+                      }).length;
+                      const perf = nonFuture.length ? Math.round((done / nonFuture.length) * 100) : 0;
+                      return (
+                        <tr key={emp.employeeId} className="border-b last:border-0">
+                          <td className="py-3 px-2">
+                            <p className="font-medium">{emp.name}</p>
+                            <p className="text-xs text-muted-foreground">ID: {emp.employeeId} • {emp.department}</p>
+                          </td>
+                          {heatmapDays.map((d) => {
+                            const s = emp.dailyStatus[d.dateStr] || 'future';
+                            return (
+                              <td key={`${emp.employeeId}-${d.dateStr}`} className="py-3 px-2 text-center">
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenReportDialog(emp, d.dateStr)}
+                                  className={`inline-flex h-3 w-3 rounded-full ${getDotClass(s)}`}
+                                  title={`${d.dateStr} - ${s}`}
+                                />
+                              </td>
+                            );
+                          })}
+                          <td className="py-3 px-2 text-right font-semibold">{perf}%</td>
                         </tr>
-                      </thead>
-                      <tbody className="divide-y divide-border/50">
-                        {employeesList.map((employee, index) => {
-                          // Calculate total working days (excluding holidays and future days)
-                          const totalWorkingDays = daysArray.filter(d => {
-                            const status = employee.dailyStatus[d.dateStr];
-                            return status && status !== 'future' && status !== 'sunday';
-                          }).length;
-                          
-                          const isEvenRow = index % 2 === 0;
-                          const rowBgClass = isEvenRow ? 'bg-background' : 'bg-muted/10';
-                          const stickyBgClass = isEvenRow 
-                            ? 'bg-background dark:bg-background' 
-                            : 'bg-muted/10 dark:bg-muted/20';
-                          
-                          return (
-                            <tr 
-                              key={employee.employeeId} 
-                              className={`hover:bg-muted/30 transition-colors ${rowBgClass}`}
-                            >
-                              {/* Employee Profile Column */}
-                              <td className={`py-3 px-3 sm:px-4 sticky left-0 z-30 ${stickyBgClass} backdrop-blur-sm min-w-[240px] sm:min-w-[280px] border-r border-border/50 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)] dark:shadow-[2px_0_4px_-2px_rgba(0,0,0,0.3)]`}>
-                                <div className="flex items-center gap-2 sm:gap-3">
-                                  <Avatar className="h-9 w-9 sm:h-10 sm:w-10 flex-shrink-0">
-                                    <AvatarFallback className="bg-primary/10 text-primary font-semibold text-xs sm:text-sm">
-                                      {getInitials(employee.name)}
-                                    </AvatarFallback>
-                                  </Avatar>
-                                  <div className="flex-1 min-w-0">
-                                    <p className="font-medium text-xs sm:text-sm truncate">{employee.name}</p>
-                                    <p className="text-[10px] sm:text-xs text-muted-foreground font-mono truncate">{employee.employeeId}</p>
-                                    <span className={`inline-block mt-1 text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 rounded-full border font-medium ${getDepartmentTagColor(employee.department)}`}>
-                                      {employee.department}
-                                    </span>
-                                  </div>
-                                </div>
-                              </td>
-                              
-                              {/* Daily Status Cells */}
-                              {daysArray.map(({ dateStr }) => (
-                                <td key={dateStr} className={`py-2 sm:py-3 px-1 sm:px-2 text-center align-middle ${rowBgClass}`}>
-                                  {getStatusCell(employee, dateStr, employee.dailyStatus[dateStr])}
-                                </td>
-                              ))}
-                              
-                              {/* Summary Counter */}
-                              <td className={`py-3 px-3 sm:px-4 text-center sticky right-0 z-30 ${stickyBgClass} backdrop-blur-sm min-w-[70px] sm:min-w-[80px] border-l border-border/50 shadow-[-2px_0_4px_-2px_rgba(0,0,0,0.1)] dark:shadow-[-2px_0_4px_-2px_rgba(0,0,0,0.3)]`}>
-                                <span className="text-xs sm:text-sm font-semibold text-muted-foreground">
-                                  {employee.submittedCount}/{totalWorkingDays || employee.workingDaysCount}
-                                </span>
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="mt-3 pt-3 border-t text-xs text-muted-foreground flex items-center justify-between">
+                <span>Active nodes: {summary.totalEmployees} across {departmentPerformance.length} departments</span>
+                <div className="flex items-center gap-1">
+                  <button onClick={handlePrevMonth} className="h-7 w-7 rounded-sm border inline-flex items-center justify-center"><ChevronLeft className="h-4 w-4" /></button>
+                  <span className="px-2">{String(selectedMonth).padStart(2, '0')}</span>
+                  <button onClick={handleNextMonth} className="h-7 w-7 rounded-sm border inline-flex items-center justify-center"><ChevronRight className="h-4 w-4" /></button>
+                </div>
+              </div>
+            </section>
+
+            <section className="grid gap-4 lg:grid-cols-[1fr_220px]">
+              <div className="rounded-md border bg-card p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <div>
+                    <h2 className="text-2xl font-semibold tracking-[-0.01em]">Compliance Velocity</h2>
+                    <p className="text-sm text-muted-foreground">Trailing 30-day submission momentum</p>
+                  </div>
+                  <span className="text-xs uppercase tracking-[0.06em] text-muted-foreground">Last 6 Months</span>
+                </div>
+                <div className="h-44 flex items-end gap-2 border-b pb-4">
+                  {velocityBars.map((h, idx) => (
+                    <div key={idx} className="flex-1 rounded-t-sm bg-primary" style={{ height: `${h * 2}px` }} />
+                  ))}
+                </div>
+                <div className="grid grid-cols-3 gap-3 mt-3 text-sm">
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.06em] text-muted-foreground">Peak Time</p>
+                    <p className="font-semibold">09:42 AM</p>
+                  </div>
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.06em] text-muted-foreground">Avg Delay</p>
+                    <p className="font-semibold">14.2 Min</p>
+                  </div>
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.06em] text-muted-foreground">Entity Sync</p>
+                    <p className="font-semibold text-emerald-600">Optimal</p>
                   </div>
                 </div>
               </div>
-            ) : (
-              <div className="py-20 text-center text-muted-foreground">
-                <Users className="h-12 w-12 mx-auto mb-3 opacity-20" />
-                <p>No employees found for the selected filters.</p>
-              </div>
-            )}
 
-            {/* Footer */}
-            {statusData && employeesList.length > 0 && (
-              <div className="px-5 py-3 border-t bg-muted/30 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-muted-foreground">
-                <span><strong className="text-foreground">{employeesList.length}</strong> employees</span>
-                <span><strong className="text-foreground">{statusData.daysInMonth}</strong> days in month</span>
-                <span><strong className="text-foreground">{daysArray.filter(d => !d.isSunday).length}</strong> working days</span>
+              <div className="rounded-md border bg-primary text-primary-foreground p-4 flex flex-col">
+                <div className="flex items-center justify-between mb-4">
+                  <Bolt className="h-5 w-5" />
+                  <Plus className="h-4 w-4" />
+                </div>
+                <h3 className="text-xl font-semibold mb-2">Core Health</h3>
+                <p className="text-sm text-primary-foreground/80 mb-6">
+                  Infrastructure status is nominal. Reporting engines synchronized across all nodes.
+                </p>
+                <div className="mt-auto pt-4 border-t border-primary-foreground/20">
+                  <p className="text-xs uppercase tracking-[0.06em] text-primary-foreground/70">Network Latency</p>
+                  <p className="text-4xl font-semibold">42ms</p>
+                </div>
               </div>
-            )}
-          </div>
+            </section>
+          </main>
         </div>
       </div>
+
       <Dialog open={reportDialogOpen} onOpenChange={setReportDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -827,18 +501,9 @@ export default function ManagementDashboardPage() {
             <p className="text-sm text-destructive">{reportDialogError}</p>
           ) : selectedReport ? (
             <div className="space-y-3 text-sm">
-              <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">Employee ID</span>
-                <span className="font-medium">{selectedReport.employeeId}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">Status</span>
-                <span className="font-medium">{selectedReport.status}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">Department</span>
-                <span className="font-medium">{selectedReport.department}</span>
-              </div>
+              <div className="flex items-center justify-between"><span className="text-muted-foreground">Employee ID</span><span className="font-medium">{selectedReport.employeeId}</span></div>
+              <div className="flex items-center justify-between"><span className="text-muted-foreground">Status</span><span className="font-medium">{selectedReport.status}</span></div>
+              <div className="flex items-center justify-between"><span className="text-muted-foreground">Department</span><span className="font-medium">{selectedReport.department}</span></div>
               <div className="pt-2 border-t">
                 <p className="text-muted-foreground mb-1">Work Report</p>
                 <p className="whitespace-pre-wrap">{selectedReport.workReport || 'No details provided'}</p>

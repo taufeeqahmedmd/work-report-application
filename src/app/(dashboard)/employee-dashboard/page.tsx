@@ -27,7 +27,15 @@ import {
   Lock,
   Sparkles,
   Mail,
-  RotateCcw
+  RotateCcw,
+  LayoutDashboard,
+  BarChart3,
+  Users,
+  Activity,
+  Bell,
+  Settings,
+  LifeBuoy,
+  LogOut
 } from 'lucide-react';
 import { toast } from 'sonner';
 import Link from 'next/link';
@@ -260,6 +268,15 @@ export default function EmployeeDashboardPage() {
     }
   }, [editingReport, editStatus, editWorkReport, handleCancelEdit]);
 
+  const handleLogout = useCallback(async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+      window.location.href = '/';
+    } catch {
+      toast.error('Failed to logout');
+    }
+  }, []);
+
   const formatDate = useCallback((dateStr: string) => formatDateForDisplay(dateStr), []);
   const getShortDay = useCallback((dateStr: string) => getShortDayIST(dateStr), []);
   const getShortDate = useCallback((dateStr: string) => getShortDateIST(dateStr), []);
@@ -332,30 +349,62 @@ export default function EmployeeDashboardPage() {
   }
 
   return (
-    <div className="min-h-screen pt-16 pb-12 bg-gradient-to-b from-background via-background to-muted/20 overflow-x-hidden">
-      <div className="container px-3 sm:px-4 md:px-6 py-4 sm:py-8 max-w-full">
-        <div className="w-full">
-          
-          {/* Header Section */}
-          <div className="mb-5 sm:mb-8">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center flex-shrink-0">
-                <User className="w-4 h-4 sm:w-5 sm:h-5 text-primary-foreground" />
-              </div>
-              <div className="min-w-0">
-                <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Dashboard</h1>
-                <p className="text-xs sm:text-sm text-muted-foreground truncate">
-                  Welcome back, {session.name.split(' ')[0]}
-                </p>
+    <div className="min-h-screen pt-16 bg-background overflow-x-hidden">
+      <div className="px-3 sm:px-4 md:px-6 py-4">
+        <div className="grid gap-4 lg:grid-cols-[220px_1fr]">
+          <aside className="hidden lg:flex lg:flex-col rounded-md border border-primary/30 bg-primary text-primary-foreground overflow-hidden min-h-[calc(100vh-7.5rem)]">
+            <div className="px-5 py-4 border-b border-primary-foreground/10">
+              <h2 className="text-2xl font-semibold leading-none">Work Report</h2>
+              <p className="text-[11px] mt-1 uppercase tracking-[0.08em] text-primary-foreground/70">Enterprise Analytics</p>
+            </div>
+            <nav className="px-2 py-3 space-y-1">
+              <Link href="/employee-dashboard" className="flex items-center gap-3 rounded-sm bg-primary-foreground/8 px-3 py-2 text-xs font-semibold uppercase tracking-[0.06em]">
+                <LayoutDashboard className="h-4 w-4" /> Dashboard
+              </Link>
+              <Link href="/employee-reports" className="flex items-center gap-3 rounded-sm px-3 py-2 text-xs font-semibold uppercase tracking-[0.06em] text-primary-foreground/80 hover:bg-primary-foreground/8 hover:text-primary-foreground">
+                <BarChart3 className="h-4 w-4" /> Reports
+              </Link>
+              <Link href="/manage-team" className="flex items-center gap-3 rounded-sm px-3 py-2 text-xs font-semibold uppercase tracking-[0.06em] text-primary-foreground/80 hover:bg-primary-foreground/8 hover:text-primary-foreground">
+                <Users className="h-4 w-4" /> Team Management
+              </Link>
+              <Link href="/management-dashboard" className="flex items-center gap-3 rounded-sm px-3 py-2 text-xs font-semibold uppercase tracking-[0.06em] text-primary-foreground/80 hover:bg-primary-foreground/8 hover:text-primary-foreground">
+                <Activity className="h-4 w-4" /> Analytics
+              </Link>
+            </nav>
+            <div className="mt-auto px-2 py-3 border-t border-primary-foreground/10 space-y-1">
+              <button className="w-full flex items-center gap-3 rounded-sm px-3 py-2 text-xs font-semibold uppercase tracking-[0.06em] text-primary-foreground/80 hover:bg-primary-foreground/8 hover:text-primary-foreground">
+                <LifeBuoy className="h-4 w-4" /> Support
+              </button>
+              <button onClick={handleLogout} className="w-full flex items-center gap-3 rounded-sm px-3 py-2 text-xs font-semibold uppercase tracking-[0.06em] text-primary-foreground/80 hover:bg-primary-foreground/8 hover:text-primary-foreground">
+                <LogOut className="h-4 w-4" /> Sign Out
+              </button>
+            </div>
+          </aside>
+
+          <section className="space-y-4">
+            <div className="rounded-md border bg-card">
+              <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
+                <div>
+                  <h1 className="text-2xl font-semibold tracking-[-0.01em]">Dashboard</h1>
+                  <p className="text-sm text-muted-foreground">Welcome back, {session.name.split(' ')[0]}</p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <button className="inline-flex h-8 w-8 items-center justify-center rounded-sm border text-muted-foreground"><Bell className="h-4 w-4" /></button>
+                  <button className="inline-flex h-8 w-8 items-center justify-center rounded-sm border text-muted-foreground"><Settings className="h-4 w-4" /></button>
+                  <div className="text-right hidden sm:block">
+                    <p className="text-sm font-medium">{session.name}</p>
+                    <p className="text-xs text-muted-foreground">{session.email}</p>
+                  </div>
+                  <div className="h-9 w-9 rounded-md bg-primary text-primary-foreground flex items-center justify-center text-sm font-semibold">
+                    {session.name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()}
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Main Content Grid with Calendar */}
-          <div className="grid gap-4 sm:gap-6 lg:grid-cols-[1fr_400px] mb-6">
-            <div className="space-y-4 sm:space-y-6 min-w-0">
-          {/* Combined Profile & Action Card */}
-          <div className="p-4 sm:p-6 rounded-2xl bg-card border shadow-sm">
+            <div className="grid gap-4 xl:grid-cols-[1fr_320px]">
+              <div className="space-y-4 min-w-0">
+          <div className="p-4 sm:p-6 rounded-md bg-card border shadow-sm">
             <div className="flex flex-col lg:flex-row items-start gap-4 sm:gap-6">
               {/* Left Section - Profile Info */}
               <div className="flex items-start gap-3 sm:gap-4 flex-1 min-w-0 w-full">
@@ -381,7 +430,7 @@ export default function EmployeeDashboardPage() {
                 
                 {/* Info */}
                 <div className="flex-1 min-w-0">
-                  <h2 className="text-base sm:text-xl font-semibold truncate">{session.name}</h2>
+                  <h2 className="text-base sm:text-xl font-semibold truncate">Today&apos;s Report</h2>
                   <div className="flex items-center gap-1.5 text-xs sm:text-sm text-muted-foreground mb-3">
                     <Mail className="w-3.5 h-3.5 flex-shrink-0" />
                     <span className="truncate">{session.email}</span>
@@ -434,7 +483,7 @@ export default function EmployeeDashboardPage() {
                 <Link href="/work-report" className="block w-full lg:w-auto">
                   <Button 
                     size="sm" 
-                    className="w-full lg:w-auto bg-foreground text-background hover:bg-foreground/90"
+                    className="w-full lg:w-auto bg-primary text-primary-foreground hover:bg-primary/90 uppercase text-xs tracking-[0.06em]"
                   >
                     {todayReport ? (
                       <>View Report</>
@@ -450,7 +499,7 @@ export default function EmployeeDashboardPage() {
           {/* Stats Grid */}
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5 sm:gap-3 mb-4 sm:mb-6">
             {/* Total Reports */}
-            <div className="p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-card border shadow-sm hover:shadow-md transition-shadow min-w-0">
+            <div className="p-3 sm:p-4 rounded-md bg-card border shadow-sm min-w-0">
               <div className="flex items-center justify-between mb-1.5 sm:mb-2 gap-1">
                 <span className="text-[11px] sm:text-xs font-medium text-muted-foreground truncate">Total Reports</span>
                 <FileText className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground flex-shrink-0" />
@@ -459,7 +508,7 @@ export default function EmployeeDashboardPage() {
             </div>
 
             {/* Working Days */}
-            <div className="p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-card border shadow-sm min-w-0">
+            <div className="p-3 sm:p-4 rounded-md bg-card border shadow-sm min-w-0">
               <div className="flex items-center justify-between mb-1.5 sm:mb-2 gap-1">
                 <span className="text-[11px] sm:text-xs font-medium text-muted-foreground truncate">Working Days</span>
                 <Briefcase className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground flex-shrink-0" />
@@ -468,7 +517,7 @@ export default function EmployeeDashboardPage() {
             </div>
 
             {/* On Duty */}
-            <div className="p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-card border shadow-sm min-w-0">
+            <div className="p-3 sm:p-4 rounded-md bg-card border shadow-sm min-w-0">
               <div className="flex items-center justify-between mb-1.5 sm:mb-2 gap-1">
                 <span className="text-[11px] sm:text-xs font-medium text-muted-foreground truncate">On Duty</span>
                 <Shield className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground flex-shrink-0" />
@@ -477,7 +526,7 @@ export default function EmployeeDashboardPage() {
             </div>
 
             {/* Leave Days */}
-            <div className="p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-card border shadow-sm min-w-0">
+            <div className="p-3 sm:p-4 rounded-md bg-card border shadow-sm min-w-0">
               <div className="flex items-center justify-between mb-1.5 sm:mb-2 gap-1">
                 <span className="text-[11px] sm:text-xs font-medium text-muted-foreground truncate">Leave Days</span>
                 <Coffee className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground flex-shrink-0" />
@@ -486,7 +535,7 @@ export default function EmployeeDashboardPage() {
             </div>
 
             {/* Attendance Rate */}
-            <div className="p-3 sm:p-4 rounded-xl sm:rounded-2xl border shadow-sm bg-card col-span-2 sm:col-span-1 min-w-0">
+            <div className="p-3 sm:p-4 rounded-md border shadow-sm bg-card col-span-2 sm:col-span-1 min-w-0">
               <div className="flex items-center justify-between mb-1.5 sm:mb-2 gap-1">
                 <span className="text-[11px] sm:text-xs font-medium text-muted-foreground truncate">Attendance</span>
                 <TrendingUp className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground flex-shrink-0" />
@@ -497,52 +546,23 @@ export default function EmployeeDashboardPage() {
             </div>
           </div>
 
-          <div className="mb-4 sm:mb-6 rounded-xl sm:rounded-2xl border bg-card shadow-sm overflow-hidden">
-            <div className="p-3 sm:p-4 border-b bg-muted/30">
-              <h3 className="font-semibold text-sm">Assigned Checklist</h3>
-              <p className="text-[11px] sm:text-xs text-muted-foreground mt-0.5">
-                Checkpoints assigned by your manager or team head.
-              </p>
-            </div>
-            <div className="p-3 sm:p-4 space-y-2">
-              {checkpoints.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No checklist items assigned yet.</p>
-              ) : (
-                checkpoints.map((item) => (
-                  <label key={item.id} className="flex items-start gap-2 rounded-md border p-2.5 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={item.isCompleted}
-                      onChange={() => handleToggleCheckpoint(item.id, item.isCompleted)}
-                      className="mt-1"
-                    />
-                    <span className="text-sm">
-                      <span className={`font-medium ${item.isCompleted ? 'line-through text-muted-foreground' : ''}`}>{item.title}</span>
-                      {item.description ? <span className="block text-xs text-muted-foreground mt-0.5">{item.description}</span> : null}
-                    </span>
-                  </label>
-                ))
-              )}
-            </div>
-          </div>
-
           {/* Edit Permission Banner */}
           {canEditOwnReports && (
-            <div className="mb-4 p-4 rounded-xl bg-muted/50 border border-border">
+            <div className="mb-4 p-4 rounded-md bg-primary text-primary-foreground border border-primary">
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
-                  <Pencil className="h-4 w-4 text-foreground" />
+                <div className="w-8 h-8 rounded-md bg-primary-foreground/10 flex items-center justify-center flex-shrink-0">
+                  <Pencil className="h-4 w-4 text-primary-foreground" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-emerald-700 dark:text-emerald-400">Editing Enabled</p>
-                  <p className="text-xs text-muted-foreground">You can edit your reports on the day they were created</p>
+                  <p className="text-sm font-medium uppercase tracking-[0.06em]">Editing Enabled</p>
+                  <p className="text-xs text-primary-foreground/70">You can edit your reports on the day they were created</p>
                 </div>
               </div>
             </div>
           )}
 
           {/* Reports List */}
-          <div className="rounded-xl sm:rounded-2xl border bg-card shadow-sm overflow-hidden">
+          <div className="rounded-md border bg-card shadow-sm overflow-hidden">
             <div className="p-3 sm:p-4 border-b bg-muted/30 flex items-center justify-between gap-3">
               <div className="min-w-0">
                 <h3 className="font-semibold text-sm flex items-center gap-2">
@@ -800,8 +820,36 @@ export default function EmployeeDashboardPage() {
           </div>
             </div>
 
-            {/* Calendar Sidebar */}
-            <div className="lg:sticky lg:top-20 h-fit">
+            <div className="space-y-4 xl:sticky xl:top-20 h-fit">
+              <div className="rounded-md border bg-card shadow-sm overflow-hidden">
+                <div className="p-3 sm:p-4 border-b bg-muted/30">
+                  <h3 className="font-semibold text-sm uppercase tracking-[0.06em]">Assigned Checklist</h3>
+                  <p className="text-[11px] sm:text-xs text-muted-foreground mt-0.5">
+                    Checkpoints assigned by your manager or team head.
+                  </p>
+                </div>
+                <div className="p-3 sm:p-4 space-y-2">
+                  {checkpoints.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">No checklist items assigned yet.</p>
+                  ) : (
+                    checkpoints.map((item) => (
+                      <label key={item.id} className="flex items-start gap-2 rounded-sm border p-2.5 cursor-pointer bg-muted/20">
+                        <input
+                          type="checkbox"
+                          checked={item.isCompleted}
+                          onChange={() => handleToggleCheckpoint(item.id, item.isCompleted)}
+                          className="mt-1"
+                        />
+                        <span className="text-sm">
+                          <span className={`font-medium ${item.isCompleted ? 'line-through text-muted-foreground' : ''}`}>{item.title}</span>
+                          {item.description ? <span className="block text-xs text-muted-foreground mt-0.5">{item.description}</span> : null}
+                        </span>
+                      </label>
+                    ))
+                  )}
+                </div>
+              </div>
+
               <WorkReportCalendar 
                 reports={reports} 
                 holidays={holidays}
@@ -815,7 +863,7 @@ export default function EmployeeDashboardPage() {
               />
             </div>
           </div>
-
+          </section>
         </div>
       </div>
     </div>

@@ -37,7 +37,6 @@ function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState(errorParam || '');
   const [loading, setLoading] = useState(false);
-  const [focused, setFocused] = useState<string | null>(null);
   const [checkingAuth, setCheckingAuth] = useState(true);
 
   // Check if user is already logged in
@@ -101,34 +100,30 @@ function LoginForm() {
   }
 
   return (
-    <div className="w-full max-w-sm animate-fade-in-up">
-      {/* Logo & Header */}
+    <div className="w-full max-w-md rounded-xl border border-border bg-card px-8 py-9 shadow-sm">
       <div className="text-center mb-8">
-        <Link href="/" className="inline-flex items-center space-x-2 mb-8 group">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-foreground group-hover:scale-105 transition-transform">
-            <span className="text-base font-bold text-background">W</span>
+        <Link href="/" className="inline-flex items-center space-x-3 mb-8">
+          <div className="flex h-10 w-10 items-center justify-center rounded-md bg-primary">
+            <span className="text-base font-bold text-primary-foreground">W</span>
           </div>
-          <span className="font-semibold text-lg group-hover:translate-x-0.5 transition-transform">WorkReport</span>
+          <span className="font-semibold text-[34px] leading-none tracking-[-0.02em]">WorkReport</span>
         </Link>
-        <h1 className="text-2xl font-bold mb-2">Welcome back</h1>
-        <p className="text-sm text-muted-foreground">
+        <h1 className="text-5xl font-semibold leading-tight tracking-[-0.02em] mb-2">Welcome back</h1>
+        <p className="text-lg text-muted-foreground leading-snug">
           Enter your credentials to access your account
         </p>
       </div>
       
       <form onSubmit={handleSubmit} className="space-y-5">
         {error && (
-          <div className="flex items-center gap-2 p-4 text-sm bg-destructive/10 text-destructive rounded-xl animate-fade-in">
+          <div className="flex items-center gap-2 p-3 text-sm bg-destructive/10 text-destructive rounded-md animate-fade-in">
             <AlertCircle className="h-4 w-4 shrink-0" />
             <span>{error}</span>
           </div>
         )}
         
         <div className="space-y-2">
-          <Label 
-            htmlFor="employeeId" 
-            className={`text-sm font-medium transition-colors ${focused === 'employeeId' ? 'text-foreground' : 'text-muted-foreground'}`}
-          >
+          <Label htmlFor="employeeId" className="text-sm text-foreground/90">
             Employee ID
           </Label>
           <Input
@@ -137,26 +132,21 @@ function LoginForm() {
             placeholder="Enter your employee ID"
             value={employeeId}
             onChange={(e) => setEmployeeId(e.target.value)}
-            onFocus={() => setFocused('employeeId')}
-            onBlur={() => setFocused(null)}
             required
             disabled={loading}
             autoComplete="username"
-            className="h-12"
+            className="h-11 rounded-md"
           />
         </div>
         
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <Label 
-              htmlFor="password" 
-              className={`text-sm font-medium transition-colors ${focused === 'password' ? 'text-foreground' : 'text-muted-foreground'}`}
-            >
+            <Label htmlFor="password" className="text-sm text-foreground/90">
               Password
             </Label>
             <Link
               href="/reset-password"
-              className="text-xs text-muted-foreground hover:text-foreground transition-colors link-hover"
+              className="text-xs text-muted-foreground hover:text-foreground transition-colors"
             >
               Forgot password?
             </Link>
@@ -168,12 +158,10 @@ function LoginForm() {
               placeholder="Enter your password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              onFocus={() => setFocused('password')}
-              onBlur={() => setFocused(null)}
               required
               disabled={loading}
               autoComplete="current-password"
-              className="h-12 pr-12"
+              className="h-11 pr-12 rounded-md"
             />
             <button
               type="button"
@@ -185,7 +173,7 @@ function LoginForm() {
           </div>
         </div>
         
-        <Button type="submit" className="w-full h-12 text-base btn-shine" disabled={loading}>
+        <Button type="submit" className="w-full h-11 text-base" disabled={loading}>
           {loading ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -201,7 +189,7 @@ function LoginForm() {
       </form>
 
       {/* Divider */}
-      <div className="relative my-6">
+      <div className="relative my-7">
         <div className="absolute inset-0 flex items-center">
           <span className="w-full border-t" />
         </div>
@@ -214,7 +202,7 @@ function LoginForm() {
       <Button
         type="button"
         variant="outline"
-        className="w-full h-12 text-base"
+        className="w-full h-11 text-base"
         disabled={loading || checkingAuth}
         onClick={() => {
           const callbackUrlParam = callbackUrl ? `?callbackUrl=${encodeURIComponent(callbackUrl)}` : '';
@@ -242,7 +230,7 @@ function LoginForm() {
         Sign in with Google
       </Button>
       
-      <p className="text-center text-sm text-muted-foreground mt-8">
+      <p className="text-center text-sm text-muted-foreground mt-9">
         Don&apos;t have an account?{' '}
         <span className="text-foreground font-medium">Contact your administrator</span>
       </p>
@@ -278,7 +266,7 @@ function LoginFormFallback() {
 
 export default function LoginPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 pt-16">
+    <div className="min-h-screen flex items-center justify-center px-4 py-10">
       <Suspense fallback={<LoginFormFallback />}>
         <LoginForm />
       </Suspense>

@@ -43,32 +43,32 @@
   --radius-xl: calc(var(--radius) + 4px);
 }
 
-/* Clean Black & White SaaS Theme - Light Mode */
+/* Executive Precision Theme - Light Mode */
 :root {
   --radius: 0.5rem;
-  --background: #ffffff;
-  --foreground: #0a0a0a;
+  --background: #f8f9ff;
+  --foreground: #0b1c30;
   --card: #ffffff;
-  --card-foreground: #0a0a0a;
+  --card-foreground: #0b1c30;
   --popover: #ffffff;
-  --popover-foreground: #0a0a0a;
-  --primary: #0a0a0a;
-  --primary-foreground: #fafafa;
-  --secondary: #f5f5f5;
-  --secondary-foreground: #0a0a0a;
-  --muted: #f5f5f5;
-  --muted-foreground: #737373;
-  --accent: #f5f5f5;
-  --accent-foreground: #0a0a0a;
+  --popover-foreground: #0b1c30;
+  --primary: #131b2e;
+  --primary-foreground: #ffffff;
+  --secondary: #eff4ff;
+  --secondary-foreground: #0b1c30;
+  --muted: #eff4ff;
+  --muted-foreground: #57657b;
+  --accent: #eff4ff;
+  --accent-foreground: #0b1c30;
   --destructive: #dc2626;
-  --border: #e5e5e5;
-  --input: #e5e5e5;
-  --ring: #0a0a0a;
-  --chart-1: #0a0a0a;
-  --chart-2: #404040;
-  --chart-3: #737373;
-  --chart-4: #a3a3a3;
-  --chart-5: #d4d4d4;
+  --border: #d3e4fe;
+  --input: #d3e4fe;
+  --ring: #131b2e;
+  --chart-1: #131b2e;
+  --chart-2: #3f465c;
+  --chart-3: #57657b;
+  --chart-4: #7c839b;
+  --chart-5: #bec6e0;
   --sidebar: #fafafa;
   --sidebar-foreground: #0a0a0a;
   --sidebar-primary: #0a0a0a;

@@ -1,12 +1,13 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
+import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Loader2, Plus, Building2, GitBranch, Users, Search, Trash2, UserX, UserCheck, FolderTree, X, Pencil, Key, Settings, Shield, Upload, Download, FileJson, FileSpreadsheet, Check } from 'lucide-react';
+import { Loader2, Plus, Building2, GitBranch, Users, Search, Trash2, UserX, UserCheck, FolderTree, X, Pencil, Key, Settings, Shield, Upload, Download, FileJson, FileSpreadsheet, Check, Bell, CircleHelp, Activity, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import type { SafeEmployee, Entity, Branch, Department, EditPermissions, PageAccess } from '@/types';
 import { DEFAULT_PAGE_ACCESS } from '@/types';
@@ -1030,14 +1031,65 @@ export default function SuperAdminPage() {
   }
 
   return (
-    <div className="min-h-screen pt-16">
-      <div className="container py-8 px-4 md:px-8">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen pt-16 bg-background overflow-x-hidden">
+      <div className="px-3 sm:px-4 md:px-6 py-4">
+      <div className="grid gap-4 lg:grid-cols-[220px_1fr]">
+        <aside className="hidden lg:flex lg:flex-col rounded-md border border-primary/30 bg-primary text-primary-foreground overflow-hidden min-h-[calc(100vh-7.5rem)]">
+          <div className="px-5 py-4 border-b border-primary-foreground/10">
+            <h2 className="text-2xl font-semibold leading-none">Work Report</h2>
+            <p className="text-[11px] mt-1 uppercase tracking-[0.08em] text-primary-foreground/70">Enterprise Analytics</p>
+          </div>
+          <nav className="px-2 py-3 space-y-1">
+            <Link href="/employee-dashboard" className="flex items-center gap-3 rounded-sm px-3 py-2 text-xs font-semibold uppercase tracking-[0.06em] text-primary-foreground/80 hover:bg-primary-foreground/8 hover:text-primary-foreground">
+              <Activity className="h-4 w-4" /> Dashboard
+            </Link>
+            <Link href="/employee-reports" className="flex items-center gap-3 rounded-sm px-3 py-2 text-xs font-semibold uppercase tracking-[0.06em] text-primary-foreground/80 hover:bg-primary-foreground/8 hover:text-primary-foreground">
+              <FileText className="h-4 w-4" /> Reports
+            </Link>
+            <Link href="/manage-team" className="flex items-center gap-3 rounded-sm px-3 py-2 text-xs font-semibold uppercase tracking-[0.06em] text-primary-foreground/80 hover:bg-primary-foreground/8 hover:text-primary-foreground">
+              <Users className="h-4 w-4" /> Team Management
+            </Link>
+            <Link href="/management-dashboard" className="flex items-center gap-3 rounded-sm px-3 py-2 text-xs font-semibold uppercase tracking-[0.06em] text-primary-foreground/80 hover:bg-primary-foreground/8 hover:text-primary-foreground">
+              <Activity className="h-4 w-4" /> Analytics
+            </Link>
+            <Link href="/super-admin" className="flex items-center gap-3 rounded-sm bg-primary-foreground/8 px-3 py-2 text-xs font-semibold uppercase tracking-[0.06em]">
+              <Shield className="h-4 w-4" /> Admin Portal
+            </Link>
+          </nav>
+        </aside>
+
+      <main className="max-w-7xl mx-auto w-full">
+        <div className="rounded-md border bg-card px-4 py-3 mb-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-4">
+              <h1 className="text-2xl font-semibold tracking-[-0.01em]">Work Report Application</h1>
+              <div className="relative min-w-[260px] hidden sm:block">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="Search system entities..."
+                  className="pl-9 h-9 bg-muted/30 border-0"
+                />
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <button className="inline-flex h-8 w-8 items-center justify-center rounded-sm border text-muted-foreground"><Bell className="h-4 w-4" /></button>
+              <button className="inline-flex h-8 w-8 items-center justify-center rounded-sm border text-muted-foreground"><CircleHelp className="h-4 w-4" /></button>
+              <button className="inline-flex h-8 w-8 items-center justify-center rounded-sm border text-muted-foreground"><Settings className="h-4 w-4" /></button>
+              <div className="text-right hidden sm:block">
+                <p className="text-sm font-medium">Admin User</p>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-[0.06em]">Super Administrator</p>
+              </div>
+              <button className="inline-flex h-8 w-8 items-center justify-center rounded-sm border bg-primary text-primary-foreground"><Plus className="h-4 w-4" /></button>
+            </div>
+          </div>
+        </div>
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold tracking-tight">Super Admin Dashboard</h1>
+        <div className="mb-6">
+          <h1 className="text-2xl font-semibold tracking-[-0.01em]">System Dashboard</h1>
           <p className="text-muted-foreground mt-1">
-            Manage entities, branches, departments, and users across the entire system
+            Global administrative control and organizational performance overview.
           </p>
         </div>
 
@@ -2588,7 +2640,8 @@ export default function SuperAdminPage() {
             </Card>
           </div>
         )}
-        </div>
+        </main>
+      </div>
       </div>
 
       {/* Confirmation Dialog */}

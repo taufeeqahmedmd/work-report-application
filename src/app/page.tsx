@@ -4,11 +4,10 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, FileText, Users, BarChart3, Shield, Clock, CheckCircle, Sparkles, Zap, ArrowUpRight, Loader2 } from 'lucide-react';
+import { ArrowRight, FileText, Users, BarChart3, Shield, Clock, CheckCircle, Loader2 } from 'lucide-react';
 import { getISTYear } from '@/lib/date';
 import type { SessionUser } from '@/types';
 
-// Get dashboard URL based on user role
 function getDashboardUrl(role: SessionUser['role']): string {
   switch (role) {
     case 'superadmin':
@@ -27,33 +26,25 @@ function getDashboardUrl(role: SessionUser['role']): string {
 
 export default function Home() {
   const router = useRouter();
-  const [mounted, setMounted] = useState(false);
   const [checkingAuth, setCheckingAuth] = useState(true);
 
   useEffect(() => {
-    // Check if user is logged in and redirect to dashboard
     const checkAuthAndRedirect = async () => {
       try {
         const response = await fetch('/api/auth/session');
         const data = await response.json();
-        
         if (data.success && data.data) {
-          // User is logged in, redirect to their dashboard
-          const dashboardUrl = getDashboardUrl(data.data.role);
-          router.replace(dashboardUrl);
+          router.replace(getDashboardUrl(data.data.role));
           return;
         }
       } catch {
-        // Not logged in, show homepage
+        // No active session.
       }
       setCheckingAuth(false);
-      setMounted(true);
     };
-    
     checkAuthAndRedirect();
   }, [router]);
 
-  // Show loading while checking auth
   if (checkingAuth) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -62,39 +53,6 @@ export default function Home() {
     );
   }
 
-  const features = [
-    {
-      icon: FileText,
-      title: 'Daily Reports',
-      description: 'Submit daily work reports with an intuitive, streamlined form.',
-    },
-    {
-      icon: Users,
-      title: 'Team Management',
-      description: 'Manage employees, assign roles, and organize teams efficiently.',
-    },
-    {
-      icon: BarChart3,
-      title: 'Analytics',
-      description: 'Visualize data with powerful charts and track performance metrics.',
-    },
-    {
-      icon: Shield,
-      title: 'Role-Based Access',
-      description: 'Secure access control with multiple role levels.',
-    },
-    {
-      icon: Clock,
-      title: 'Real-Time Tracking',
-      description: 'Monitor work reports and get instant productivity updates.',
-    },
-    {
-      icon: CheckCircle,
-      title: 'Leave Management',
-      description: 'Track working days and leaves for better attendance.',
-    },
-  ];
-
   const stats = [
     { value: '99.9%', label: 'Uptime' },
     { value: '10K+', label: 'Reports' },
@@ -102,162 +60,153 @@ export default function Home() {
     { value: '24/7', label: 'Support' },
   ];
 
+  const features = [
+    { icon: FileText, title: 'Daily Reports', description: 'Streamlined daily report creation with structured status tracking.' },
+    { icon: Users, title: 'Team Management', description: 'Manage departments, users, and checkpoints with a centralized panel.' },
+    { icon: BarChart3, title: 'Analytics', description: 'Get actionable trends and performance metrics across teams.' },
+    { icon: Shield, title: 'Role-Based Access', description: 'Permission controls for admins, managers, and employees.' },
+    { icon: Clock, title: 'Real-Time Tracking', description: 'Follow report activity and attendance updates as they happen.' },
+    { icon: CheckCircle, title: 'Compliance', description: 'Keep reporting flows consistent and aligned with team protocols.' },
+  ];
+
   return (
-    <div className="min-h-screen">
-      {/* Hero Section */}
-      <section className="pt-32 pb-20 px-4 relative overflow-hidden">
-        {/* Background decoration */}
-        <div className="absolute inset-0 -z-10">
-          <div className="absolute top-20 left-10 w-72 h-72 bg-muted rounded-full blur-3xl opacity-50" />
-          <div className="absolute bottom-20 right-10 w-96 h-96 bg-muted rounded-full blur-3xl opacity-30" />
-        </div>
-        
-        <div className="container max-w-5xl mx-auto text-center">
-          {/* Badge */}
-          <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full border bg-background/50 backdrop-blur-sm text-sm mb-8 hover-lift cursor-default ${mounted ? 'animate-fade-in-down' : 'opacity-0'}`}>
-            <span className="w-2 h-2 rounded-full bg-green-500 pulse-dot"></span>
-            <span>Now available for teams</span>
-            <Sparkles className="h-4 w-4 text-muted-foreground" />
-          </div>
-          
-          {/* Main heading */}
-          <h1 className={`text-5xl sm:text-6xl md:text-7xl font-bold tracking-tight mb-6 ${mounted ? 'animate-fade-in-up opacity-0 delay-100' : 'opacity-0'}`}>
-            Work Report
-            <br />
-            <span className="text-muted-foreground">Management System</span>
-          </h1>
-          
-          {/* Subtitle */}
-          <p className={`text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-10 ${mounted ? 'animate-fade-in-up opacity-0 delay-200' : 'opacity-0'}`}>
-            A comprehensive solution for tracking employee work reports, 
-            managing teams, and analyzing productivity data. Built for modern businesses.
-          </p>
-          
-          {/* CTA Buttons */}
-          <div className={`flex flex-col sm:flex-row gap-4 justify-center mb-16 ${mounted ? 'animate-fade-in-up opacity-0 delay-300' : 'opacity-0'}`}>
-            <Button asChild size="lg" className="h-12 px-8 text-base btn-shine active-press">
-              <Link href="/work-report">
-                Submit Report
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Link>
-            </Button>
-            <Button asChild variant="outline" size="lg" className="h-12 px-8 text-base hover-lift active-press">
-              <Link href="/login">Sign in</Link>
-            </Button>
-          </div>
-          
-          {/* Stats */}
-          <div className={`grid grid-cols-2 md:grid-cols-4 gap-8 max-w-3xl mx-auto ${mounted ? 'animate-fade-in-up opacity-0 delay-400' : 'opacity-0'}`}>
-            {stats.map((stat, index) => (
-              <div 
-                key={index} 
-                className="text-center group cursor-default"
-              >
-                <p className="text-3xl md:text-4xl font-bold mb-1 group-hover:scale-110 transition-transform">
-                  {stat.value}
-                </p>
-                <p className="text-sm text-muted-foreground">{stat.label}</p>
+    <div className="min-h-screen bg-background pt-16">
+      <section className="px-4 py-8">
+        <div className="container max-w-6xl mx-auto">
+          <div className="grid gap-8 lg:grid-cols-[1fr_1fr] items-center">
+            <div>
+              <p className="text-[11px] uppercase tracking-[0.06em] text-muted-foreground font-semibold mb-3">Enterprise Analytics</p>
+              <h1 className="text-5xl sm:text-6xl font-semibold leading-[0.95] tracking-[-0.02em] mb-4">
+                Work Report
+                <br />
+                Management
+                <br />
+                System
+              </h1>
+              <p className="text-muted-foreground max-w-xl mb-6">
+                A comprehensive solution for tracking employee work reports, managing teams, and analyzing productivity data.
+              </p>
+              <div className="flex gap-3">
+                <Button asChild className="rounded-sm bg-primary text-primary-foreground px-5">
+                  <Link href="/work-report">Submit Report <ArrowRight className="h-4 w-4 ml-2" /></Link>
+                </Button>
+                <Button asChild variant="outline" className="rounded-sm px-5">
+                  <Link href="/login">Sign in</Link>
+                </Button>
               </div>
-            ))}
+            </div>
+
+            <div className="relative">
+              <div className="rounded-md border bg-primary text-primary-foreground p-4 shadow-sm">
+                <div className="rounded-sm border border-primary-foreground/20 bg-primary-foreground/5 p-3">
+                  <p className="text-xs uppercase tracking-[0.06em] text-primary-foreground/70 mb-2">Team Overview</p>
+                  <div className="space-y-2">
+                    <div className="h-8 rounded-sm bg-primary-foreground/12" />
+                    <div className="h-16 rounded-sm bg-primary-foreground/12" />
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="h-10 rounded-sm bg-primary-foreground/12" />
+                      <div className="h-10 rounded-sm bg-primary-foreground/12" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="absolute -bottom-4 left-5 rounded-sm border bg-card px-3 py-2 shadow-sm">
+                <p className="text-xs text-muted-foreground">KPI Pulse</p>
+                <p className="text-sm font-semibold text-emerald-600">+18.4% this week</p>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* Features Section */}
-      <section className="py-24 px-4 border-t">
-        <div className="container max-w-6xl mx-auto">
-          <div className="text-center mb-16">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border text-sm text-muted-foreground mb-4">
-              <Zap className="h-4 w-4" />
-              Features
+      <section className="px-4 pb-10">
+        <div className="container max-w-6xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-3">
+          {stats.map((stat) => (
+            <div key={stat.label} className="rounded-md border bg-card p-4 text-center">
+              <p className="text-2xl font-semibold">{stat.value}</p>
+              <p className="text-xs uppercase tracking-[0.06em] text-muted-foreground">{stat.label}</p>
             </div>
-            <h2 className="text-3xl sm:text-4xl font-bold mb-4">
-              Everything you need
-            </h2>
+          ))}
+        </div>
+      </section>
+
+      <section className="px-4 py-10 border-t">
+        <div className="container max-w-6xl mx-auto">
+          <div className="text-center mb-8">
+            <h2 className="text-3xl font-semibold tracking-[-0.01em] mb-2">Enterprise-Grade Features</h2>
             <p className="text-muted-foreground max-w-xl mx-auto">
-              All the tools to track, manage, and analyze employee work reports efficiently.
+              Designed for structured reporting and high-visibility operations.
             </p>
           </div>
-          
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-3 md:grid-cols-3">
             {features.map((feature, index) => (
-              <div 
-                key={index} 
-                className={`group p-6 rounded-xl border bg-card interactive-card gradient-border ${mounted ? 'animate-fade-in-up opacity-0' : 'opacity-0'}`}
-                style={{ animationDelay: `${(index + 1) * 100}ms` }}
+              <div
+                key={feature.title}
+                className={`rounded-md border p-4 ${index === 1 || index === 2 ? 'bg-primary text-primary-foreground border-primary' : 'bg-card'}`}
               >
-                <div className="w-12 h-12 rounded-xl bg-muted flex items-center justify-center mb-4 group-hover:bg-foreground group-hover:text-background transition-all duration-300 group-hover:scale-110">
-                  <feature.icon className="h-6 w-6" />
+                <div className={`w-10 h-10 rounded-sm flex items-center justify-center mb-3 ${index === 1 || index === 2 ? 'bg-primary-foreground/10' : 'bg-muted'}`}>
+                  <feature.icon className="h-5 w-5" />
                 </div>
-                <h3 className="font-semibold text-lg mb-2 group-hover:translate-x-1 transition-transform">{feature.title}</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">
+                <h3 className="font-semibold text-lg mb-1">{feature.title}</h3>
+                <p className={`text-sm leading-relaxed ${index === 1 || index === 2 ? 'text-primary-foreground/80' : 'text-muted-foreground'}`}>
                   {feature.description}
                 </p>
-                <div className="mt-4 flex items-center text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity">
-                  <span>Learn more</span>
-                  <ArrowUpRight className="h-4 w-4 ml-1" />
-                </div>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* How It Works */}
-      <section className="py-24 px-4 border-t bg-muted/30">
-        <div className="container max-w-4xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl sm:text-4xl font-bold mb-4">
-              How it works
-            </h2>
-            <p className="text-muted-foreground">
-              Get started in three simple steps
-            </p>
-          </div>
-          
-          <div className="grid md:grid-cols-3 gap-8 relative">
-            {/* Connection line */}
-            <div className="hidden md:block absolute top-8 left-1/4 right-1/4 h-px bg-border" />
-            
-            {[
-              { step: '1', title: 'Enter ID', desc: 'Start by entering your unique employee identifier.' },
-              { step: '2', title: 'Fill Report', desc: 'Select your status and describe your daily work.' },
-              { step: '3', title: 'Submit', desc: 'Submit and track your history through the portal.' },
-            ].map((item, index) => (
-              <div 
-                key={index} 
-                className={`text-center group ${mounted ? 'animate-fade-in-up opacity-0' : 'opacity-0'}`}
-                style={{ animationDelay: `${(index + 1) * 150}ms` }}
-              >
-                <div className="w-16 h-16 rounded-full bg-foreground text-background text-xl font-bold flex items-center justify-center mx-auto mb-4 group-hover:scale-110 group-hover:rotate-6 transition-transform relative z-10">
-                  {item.step}
-                </div>
-                <h3 className="font-semibold text-lg mb-2">{item.title}</h3>
-                <p className="text-sm text-muted-foreground">{item.desc}</p>
+      <section className="px-4 py-10 border-t">
+        <div className="container max-w-6xl mx-auto grid gap-6 lg:grid-cols-[1fr_1fr] items-center">
+          <div className="rounded-md border bg-primary text-primary-foreground p-4 min-h-[280px]">
+            <div className="h-full rounded-sm border border-primary-foreground/20 bg-primary-foreground/5 p-4 flex flex-col">
+              <p className="text-sm font-semibold mb-2">Submit Work Report</p>
+              <div className="space-y-2 flex-1">
+                <div className="h-8 rounded-sm bg-primary-foreground/12" />
+                <div className="h-8 rounded-sm bg-primary-foreground/12" />
+                <div className="h-20 rounded-sm bg-primary-foreground/12" />
               </div>
-            ))}
+              <div className="h-9 rounded-sm bg-white text-primary text-sm font-semibold flex items-center justify-center mt-3">
+                Submit
+              </div>
+            </div>
+          </div>
+          <div>
+            <h2 className="text-3xl font-semibold tracking-[-0.01em] mb-4">How it works</h2>
+            <div className="space-y-4">
+              {[
+                { step: '1', title: 'User verification', desc: 'Enter your employee ID to validate account and permissions.' },
+                { step: '2', title: 'Fill report', desc: 'Add your tasks, progress, attendance status, and work notes.' },
+                { step: '3', title: 'Submit', desc: 'Submit and review updates from your dashboard analytics.' },
+              ].map((item) => (
+                <div key={item.step} className="flex items-start gap-3 rounded-sm border bg-card p-3">
+                  <div className="h-6 w-6 rounded-sm bg-primary text-primary-foreground text-xs font-semibold flex items-center justify-center mt-0.5">
+                    {item.step}
+                  </div>
+                  <div>
+                    <h3 className="font-semibold">{item.title}</h3>
+                    <p className="text-sm text-muted-foreground">{item.desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="py-24 px-4 border-t">
-        <div className="container max-w-3xl mx-auto">
-          <div className="text-center p-12 rounded-2xl border bg-card interactive-card">
-            <h2 className="text-3xl sm:text-4xl font-bold mb-4">
-              Ready to get started?
-            </h2>
-            <p className="text-muted-foreground mb-8 max-w-lg mx-auto">
-              Submit your daily work report now or sign in to access your dashboard and analytics.
+      <section className="px-4 py-10">
+        <div className="container max-w-6xl mx-auto">
+          <div className="rounded-md border bg-primary text-primary-foreground p-10 text-center">
+            <h2 className="text-4xl font-semibold tracking-[-0.01em] mb-3">Ready to get started?</h2>
+            <p className="text-primary-foreground/80 mb-6 max-w-xl mx-auto">
+              Join teams that use Work Report for daily compliance and operational visibility.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button asChild size="lg" className="h-12 px-8 text-base btn-shine active-press">
-                <Link href="/work-report">
-                  Submit Report
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Link>
+            <div className="flex flex-wrap justify-center gap-3">
+              <Button asChild className="rounded-sm bg-white text-primary hover:bg-white/90">
+                <Link href="/work-report">Submit Report</Link>
               </Button>
-              <Button asChild variant="outline" size="lg" className="h-12 px-8 text-base hover-lift active-press">
+              <Button asChild variant="outline" className="rounded-sm border-white/40 text-white hover:bg-white/10">
                 <Link href="/employee-reports">View Reports</Link>
               </Button>
             </div>
@@ -265,32 +214,43 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="py-12 px-4 border-t">
+      <footer className="py-10 px-4 border-t">
         <div className="container max-w-6xl mx-auto">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-            <div className="flex items-center space-x-2 group">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-foreground group-hover:scale-110 transition-transform">
-                <span className="text-sm font-bold text-background">W</span>
+          <div className="grid gap-6 md:grid-cols-4 text-sm">
+            <div>
+              <div className="flex items-center space-x-2">
+                <div className="flex h-8 w-8 items-center justify-center rounded-sm bg-foreground">
+                  <span className="text-sm font-bold text-background">W</span>
+                </div>
+                <span className="font-semibold">Work Report</span>
               </div>
-              <span className="font-semibold">WorkReport</span>
+              <p className="text-xs text-muted-foreground mt-2">Enterprise Analytics</p>
             </div>
-            
-            <div className="flex items-center gap-8 text-sm text-muted-foreground">
-              <Link href="/work-report" className="link-hover hover:text-foreground transition-colors">
-                Submit Report
-              </Link>
-              <Link href="/employee-reports" className="link-hover hover:text-foreground transition-colors">
-                View Reports
-              </Link>
-              <Link href="/login" className="link-hover hover:text-foreground transition-colors">
-                Sign in
-              </Link>
+            <div>
+              <p className="font-medium mb-2">Product</p>
+              <div className="space-y-1 text-muted-foreground">
+                <Link href="/work-report" className="block hover:text-foreground">Submit Report</Link>
+                <Link href="/employee-reports" className="block hover:text-foreground">View Reports</Link>
+              </div>
             </div>
-            
-            <p className="text-sm text-muted-foreground">
-              © {getISTYear()} WorkReport
-            </p>
+            <div>
+              <p className="font-medium mb-2">Company</p>
+              <div className="space-y-1 text-muted-foreground">
+                <span className="block">About</span>
+                <span className="block">Contact</span>
+              </div>
+            </div>
+            <div>
+              <p className="font-medium mb-2">Legal</p>
+              <div className="space-y-1 text-muted-foreground">
+                <span className="block">Security</span>
+                <span className="block">Terms</span>
+              </div>
+            </div>
+          </div>
+          <div className="mt-6 pt-4 border-t text-xs text-muted-foreground flex items-center justify-between">
+            <span>© {getISTYear()} Work Report. All rights reserved.</span>
+            <span>v1.0</span>
           </div>
         </div>
       </footer>

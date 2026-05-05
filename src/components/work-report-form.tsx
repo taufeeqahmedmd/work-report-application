@@ -268,7 +268,7 @@ export function WorkReportForm() {
   // Show loading while checking session
   if (sessionLoading) {
     return (
-      <div className="border rounded-xl overflow-hidden bg-card relative">
+      <div className="border rounded-xl overflow-hidden bg-card relative shadow-sm">
         <div className="p-8 flex items-center justify-center">
           <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
           <span className="ml-2 text-muted-foreground">Checking login status...</span>
@@ -278,9 +278,9 @@ export function WorkReportForm() {
   }
 
   return (
-    <div className="border rounded-xl overflow-hidden bg-card relative">
+    <div className="border rounded-xl overflow-hidden bg-card relative shadow-sm">
       {/* Header */}
-      <div className="p-4 sm:p-5 border-b bg-muted/30">
+      <div className="p-4 sm:p-5 border-b bg-card">
         <div className="flex items-center justify-between gap-3 mb-3">
           <div className="min-w-0 flex-1">
             <h2 className="font-semibold text-sm sm:text-base">Daily Work Report</h2>
@@ -288,8 +288,8 @@ export function WorkReportForm() {
               {session ? `Welcome, ${session.name}` : formattedDate}
             </p>
           </div>
-          <div className="flex items-center gap-2 flex-shrink-0">
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <div className="flex items-center gap-2 flex-shrink-0 rounded-md border bg-muted/40 px-2 py-1.5">
+            <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.05em] text-muted-foreground">
               <Calendar className="h-4 w-4" />
               <span>{isToday ? 'Today' : 'Past Date'}</span>
             </div>
@@ -299,7 +299,7 @@ export function WorkReportForm() {
               value={selectedDate}
               onChange={(e) => handleDateChange(e.target.value)}
               max={today}
-              className="h-8 w-36 text-xs"
+              className="h-8 w-36 text-xs bg-background"
             />
           </div>
         </div>
@@ -369,8 +369,8 @@ export function WorkReportForm() {
 
         {/* Employee Details */}
         {employeeData && (
-          <div className="p-4 bg-green-50 dark:bg-green-950/30 rounded-lg border border-green-200 dark:border-green-900 animate-fade-in">
-            <div className="flex items-center gap-2 text-sm font-medium text-green-700 dark:text-green-400 mb-3">
+          <div className="p-4 bg-muted/40 rounded-lg border border-border animate-fade-in">
+            <div className="flex items-center gap-2 text-sm font-medium text-foreground mb-3">
               <CheckCircle className="h-4 w-4" />
               Employee Verified
             </div>
@@ -408,29 +408,29 @@ export function WorkReportForm() {
         {employeeData && !employeeData.hasSubmittedToday && (
           <div className="space-y-2 animate-fade-in">
             <Label className="text-sm font-medium">{isToday ? "Today's" : "Report"} Status</Label>
-            <div className="flex rounded-lg border p-1 bg-muted/50">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <button
                 type="button"
                 onClick={() => setStatus('working')}
-                className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-md text-sm font-medium transition-all ${
+                className={`flex items-center justify-center gap-2 px-4 py-3 rounded-md border text-sm font-medium transition-all ${
                   status === 'working'
-                    ? 'bg-background text-foreground shadow-sm'
-                    : 'text-muted-foreground hover:text-foreground'
+                    ? 'bg-primary text-primary-foreground border-primary'
+                    : 'bg-background text-foreground border-border hover:bg-muted/50'
                 }`}
               >
-                <Briefcase className={`h-4 w-4 ${status === 'working' ? 'text-green-600' : ''}`} />
+                <Briefcase className="h-4 w-4" />
                 Working
               </button>
               <button
                 type="button"
                 onClick={() => setStatus('leave')}
-                className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-md text-sm font-medium transition-all ${
+                className={`flex items-center justify-center gap-2 px-4 py-3 rounded-md border text-sm font-medium transition-all ${
                   status === 'leave'
-                    ? 'bg-background text-foreground shadow-sm'
-                    : 'text-muted-foreground hover:text-foreground'
+                    ? 'bg-card text-foreground border-border'
+                    : 'bg-background text-foreground border-border hover:bg-muted/50'
                 }`}
               >
-                <Coffee className={`h-4 w-4 ${status === 'leave' ? 'text-amber-600' : ''}`} />
+                <Coffee className="h-4 w-4" />
                 On Leave
               </button>
             </div>
@@ -550,10 +550,7 @@ export function WorkReportForm() {
                   Submitting...
                 </>
               ) : (
-                <>
-                  Submit Report
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </>
+                <>Submit Report <ArrowRight className="ml-2 h-4 w-4" /></>
               )}
             </Button>
           </div>

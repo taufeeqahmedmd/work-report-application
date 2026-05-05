@@ -1,10 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Loader2, Plus, Users, Search, Pencil, Trash2, X, Key, Upload, Download, FileJson, FileSpreadsheet, Check, Filter, UserX, UserCheck, CheckCircle2, Calendar, Building2, ChevronDown } from 'lucide-react';
+import { Loader2, Plus, Users, Search, Pencil, Trash2, X, Key, Upload, Download, FileJson, FileSpreadsheet, Check, Filter, UserX, UserCheck, CheckCircle2, Calendar, Building2, ChevronDown, Bell, CircleHelp, Settings, Activity, FileText, Shield } from 'lucide-react';
 import { toast } from 'sonner';
 import type { SafeEmployee, SessionUser, Department } from '@/types';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -709,25 +710,58 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="min-h-screen pt-16">
-      <div className="container py-8 px-4 md:px-6">
-        <div className="max-w-6xl mx-auto">
+    <div className="min-h-screen pt-16 bg-background overflow-x-hidden">
+      <div className="px-3 sm:px-4 md:px-6 py-4">
+        <div className="grid gap-4 lg:grid-cols-[220px_1fr]">
+          <aside className="hidden lg:flex lg:flex-col rounded-md border border-primary/30 bg-primary text-primary-foreground overflow-hidden min-h-[calc(100vh-7.5rem)]">
+            <div className="px-5 py-4 border-b border-primary-foreground/10">
+              <h2 className="text-2xl font-semibold leading-none">Work Report</h2>
+              <p className="text-[11px] mt-1 uppercase tracking-[0.08em] text-primary-foreground/70">Enterprise Analytics</p>
+            </div>
+            <nav className="px-2 py-3 space-y-1">
+              <Link href="/employee-dashboard" className="flex items-center gap-3 rounded-sm px-3 py-2 text-xs font-semibold uppercase tracking-[0.06em] text-primary-foreground/80 hover:bg-primary-foreground/8 hover:text-primary-foreground"><Activity className="h-4 w-4" /> Dashboard</Link>
+              <Link href="/employee-reports" className="flex items-center gap-3 rounded-sm px-3 py-2 text-xs font-semibold uppercase tracking-[0.06em] text-primary-foreground/80 hover:bg-primary-foreground/8 hover:text-primary-foreground"><FileText className="h-4 w-4" /> Reports</Link>
+              <Link href="/manage-team" className="flex items-center gap-3 rounded-sm px-3 py-2 text-xs font-semibold uppercase tracking-[0.06em] text-primary-foreground/80 hover:bg-primary-foreground/8 hover:text-primary-foreground"><Users className="h-4 w-4" /> Team Management</Link>
+              <Link href="/management-dashboard" className="flex items-center gap-3 rounded-sm px-3 py-2 text-xs font-semibold uppercase tracking-[0.06em] text-primary-foreground/80 hover:bg-primary-foreground/8 hover:text-primary-foreground"><Activity className="h-4 w-4" /> Analytics</Link>
+              <Link href="/admin" className="flex items-center gap-3 rounded-sm bg-primary-foreground/8 px-3 py-2 text-xs font-semibold uppercase tracking-[0.06em]"><Shield className="h-4 w-4" /> Admin Portal</Link>
+            </nav>
+          </aside>
+        <div className="max-w-6xl mx-auto w-full">
+          <div className="rounded-md border bg-card px-4 py-3 mb-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="relative min-w-[260px] hidden sm:block">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Global Search..."
+                  className="pl-9 h-9 bg-muted/30 border-0"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <button className="inline-flex h-8 w-8 items-center justify-center rounded-sm border text-muted-foreground"><Bell className="h-4 w-4" /></button>
+                <button className="inline-flex h-8 w-8 items-center justify-center rounded-sm border text-muted-foreground"><CircleHelp className="h-4 w-4" /></button>
+                <button className="inline-flex h-8 w-8 items-center justify-center rounded-sm border text-muted-foreground"><Settings className="h-4 w-4" /></button>
+                <button className="inline-flex h-8 w-8 items-center justify-center rounded-sm border bg-primary text-primary-foreground"><Plus className="h-4 w-4" /></button>
+              </div>
+            </div>
+          </div>
           {/* Header */}
-          <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center justify-between mb-6">
             <div>
-              <h1 className="text-2xl font-bold">Admin Dashboard</h1>
+              <h1 className="text-2xl font-semibold tracking-[-0.01em]">Admin User Management</h1>
               <p className="text-sm text-muted-foreground">
-                Manage users {session?.role === 'admin' ? 'in your branch' : ''}
+                Configure user roles, departments, and system access.
               </p>
             </div>
             <div className="flex gap-2">
-              <Button onClick={() => setShowCreateForm(!showCreateForm)}>
-                {showCreateForm ? <X className="h-4 w-4 mr-2" /> : <Plus className="h-4 w-4 mr-2" />}
-                {showCreateForm ? 'Cancel' : 'Add User'}
-              </Button>
-              <Button variant="outline" onClick={() => setShowBulkUploadModal(true)}>
+              <Button variant="outline" className="rounded-sm" onClick={() => setShowBulkUploadModal(true)}>
                 <Upload className="h-4 w-4 mr-2" />
                 Bulk Upload
+              </Button>
+              <Button className="rounded-sm bg-primary text-primary-foreground" onClick={() => setShowCreateForm(!showCreateForm)}>
+                {showCreateForm ? <X className="h-4 w-4 mr-2" /> : <Plus className="h-4 w-4 mr-2" />}
+                {showCreateForm ? 'Cancel' : 'Add User'}
               </Button>
               {session?.pageAccess?.mark_attendance && (
                 <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
@@ -1109,29 +1143,29 @@ export default function AdminPage() {
           )}
 
           {/* Stats */}
-          <div className="grid grid-cols-3 gap-4 mb-8">
-            <div className="border rounded-lg p-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+            <div className="border rounded-md p-4 bg-card">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">Total Users</p>
+                  <p className="text-xs uppercase tracking-[0.06em] text-muted-foreground">Total Users</p>
                   <p className="text-2xl font-bold">{users.length}</p>
                 </div>
                 <Users className="h-5 w-5 text-muted-foreground" />
               </div>
             </div>
-            <div className="border rounded-lg p-4">
+            <div className="border rounded-md p-4 bg-card">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">Active</p>
+                  <p className="text-xs uppercase tracking-[0.06em] text-muted-foreground">Active Users</p>
                   <p className="text-2xl font-bold text-green-600">{users.filter(u => u.status === 'active').length}</p>
                 </div>
                 <div className="w-2 h-2 rounded-full bg-green-500" />
               </div>
             </div>
-            <div className="border rounded-lg p-4">
+            <div className="border rounded-md p-4 bg-card">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">Inactive</p>
+                  <p className="text-xs uppercase tracking-[0.06em] text-muted-foreground">Inactive Users</p>
                   <p className="text-2xl font-bold text-red-600">{users.filter(u => u.status === 'inactive').length}</p>
                 </div>
                 <div className="w-2 h-2 rounded-full bg-red-500" />
@@ -1140,13 +1174,13 @@ export default function AdminPage() {
           </div>
 
           {/* User List */}
-          <div className="border rounded-lg">
+          <div className="border rounded-md bg-card">
             <div className="p-4 border-b flex items-center justify-between gap-4">
-              <h2 className="font-semibold">Users</h2>
+              <h2 className="font-semibold">User Directory</h2>
               <div className="relative w-64">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Search..."
+                  placeholder="Search by name, ID or department..."
                   className="pl-9"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
@@ -1231,6 +1265,46 @@ export default function AdminPage() {
                 </table>
               </div>
             )}
+            <div className="p-3 border-t text-xs text-muted-foreground">Showing {filteredUsers.length} of {users.length} employees</div>
+          </div>
+
+          <div className="grid gap-4 lg:grid-cols-[1fr_260px] mt-4">
+            <div className="border rounded-md bg-card p-4">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="font-semibold">Department Distribution</h3>
+                <span className="text-xs uppercase tracking-[0.06em] text-muted-foreground">Full Report</span>
+              </div>
+              <div className="rounded-sm border bg-primary p-3 text-primary-foreground">
+                <div className="grid grid-cols-3 gap-2 mb-2">
+                  <div className="rounded-sm border border-primary-foreground/20 p-2">
+                    <p className="text-[10px] uppercase tracking-[0.06em] opacity-70">Total Users</p>
+                    <p className="text-lg font-semibold">{users.length}</p>
+                  </div>
+                  <div className="rounded-sm border border-primary-foreground/20 p-2">
+                    <p className="text-[10px] uppercase tracking-[0.06em] opacity-70">Active</p>
+                    <p className="text-lg font-semibold">{users.filter(u => u.status === 'active').length}</p>
+                  </div>
+                  <div className="rounded-sm border border-primary-foreground/20 p-2">
+                    <p className="text-[10px] uppercase tracking-[0.06em] opacity-70">Inactive</p>
+                    <p className="text-lg font-semibold">{users.filter(u => u.status === 'inactive').length}</p>
+                  </div>
+                </div>
+                <div className="h-28 rounded-sm border border-primary-foreground/20 bg-primary-foreground/5" />
+              </div>
+            </div>
+
+            <div className="border rounded-md bg-primary text-primary-foreground p-4">
+              <h3 className="font-semibold mb-1">System Logs</h3>
+              <p className="text-xs uppercase tracking-[0.06em] text-primary-foreground/70 mb-4">Real-Time Status</p>
+              <div className="space-y-2 text-sm">
+                <p className="flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-emerald-400" /> Sync: LDAP integration successful</p>
+                <p className="flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-yellow-400" /> Warning: Bulk upload size exceeded</p>
+                <p className="flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-emerald-400" /> Success: Backup cluster rotated</p>
+              </div>
+              <button className="mt-6 w-full h-10 rounded-sm border border-primary-foreground/30 text-sm font-semibold hover:bg-primary-foreground/10 transition-colors">
+                Access Kernel
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -1593,6 +1667,8 @@ export default function AdminPage() {
           </div>
         </div>
       )}
+
+      </div>
 
       {/* Confirmation Dialog */}
       <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>

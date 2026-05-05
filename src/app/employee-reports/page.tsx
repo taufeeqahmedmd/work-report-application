@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -8,7 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { 
   Loader2, Search, FileText, Briefcase, Coffee, ArrowRight, Lock, Pencil, X, Check, 
   ChevronDown, Filter, Users, Calendar, AlertCircle, Shield, LayoutGrid, List, UserCheck, RotateCcw,
-  TrendingUp, Clock, CheckCircle2, CalendarDays, Building2, Sparkles, UserPlus
+  TrendingUp, Clock, CheckCircle2, CalendarDays, Building2, Sparkles, UserPlus, Bell, CircleHelp, Settings, LogOut, Activity
 } from 'lucide-react';
 import { toast } from 'sonner';
 import type { WorkReport, SessionUser, WorkStatus, EditPermissions, Department, Holiday } from '@/types';
@@ -18,6 +20,8 @@ import { WorkReportCalendar } from '@/components/work-report-calendar';
 import { canMarkAttendance } from '@/lib/permissions';
 
 export default function EmployeeReportsPage() {
+  const pathname = usePathname();
+  const isTeamReportPage = pathname === '/team-report';
   const [session, setSession] = useState<SessionUser | null>(null);
   const [sessionLoading, setSessionLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -653,16 +657,73 @@ export default function EmployeeReportsPage() {
   }
 
   return (
-    <div className="min-h-screen pt-16 pb-12 bg-gradient-to-b from-background via-background to-muted/20">
-      <div className="container px-4 md:px-6 py-8 max-w-full">
-        <div className={`w-full ${session?.role === 'employee' ? 'grid gap-6 lg:grid-cols-[1fr_400px]' : ''}`}>
-          <div className={session?.role === 'employee' ? '' : `${isManager && viewMode === 'scrum' ? 'max-w-[1600px]' : 'max-w-5xl'} mx-auto`}>
+    <div className="min-h-screen pt-16 pb-12 bg-background">
+      <div className="px-3 sm:px-4 md:px-6 py-4 max-w-full">
+        <div className={`${isTeamReportPage ? 'grid gap-4 lg:grid-cols-[220px_1fr]' : 'w-full'}`}>
+          {isTeamReportPage && (
+            <aside className="hidden lg:flex lg:flex-col rounded-md border border-primary/30 bg-primary text-primary-foreground overflow-hidden min-h-[calc(100vh-7.5rem)]">
+              <div className="px-5 py-4 border-b border-primary-foreground/10">
+                <h2 className="text-2xl font-semibold leading-none">Work Report</h2>
+                <p className="text-[11px] mt-1 uppercase tracking-[0.08em] text-primary-foreground/70">Enterprise Analytics</p>
+              </div>
+              <nav className="px-2 py-3 space-y-1">
+                <Link href="/employee-dashboard" className="flex items-center gap-3 rounded-sm px-3 py-2 text-xs font-semibold uppercase tracking-[0.06em] text-primary-foreground/80 hover:bg-primary-foreground/8 hover:text-primary-foreground">
+                  <Activity className="h-4 w-4" /> Dashboard
+                </Link>
+                <Link href="/team-report" className="flex items-center gap-3 rounded-sm bg-primary-foreground/8 px-3 py-2 text-xs font-semibold uppercase tracking-[0.06em]">
+                  <FileText className="h-4 w-4" /> Reports
+                </Link>
+                <Link href="/manage-team" className="flex items-center gap-3 rounded-sm px-3 py-2 text-xs font-semibold uppercase tracking-[0.06em] text-primary-foreground/80 hover:bg-primary-foreground/8 hover:text-primary-foreground">
+                  <Users className="h-4 w-4" /> Team Management
+                </Link>
+                <Link href="/management-dashboard" className="flex items-center gap-3 rounded-sm px-3 py-2 text-xs font-semibold uppercase tracking-[0.06em] text-primary-foreground/80 hover:bg-primary-foreground/8 hover:text-primary-foreground">
+                  <TrendingUp className="h-4 w-4" /> Analytics
+                </Link>
+                <Link href="/admin" className="flex items-center gap-3 rounded-sm px-3 py-2 text-xs font-semibold uppercase tracking-[0.06em] text-primary-foreground/80 hover:bg-primary-foreground/8 hover:text-primary-foreground">
+                  <Shield className="h-4 w-4" /> Admin Portal
+                </Link>
+              </nav>
+              <div className="mt-auto px-2 py-3 border-t border-primary-foreground/10 space-y-1">
+                <button className="w-full flex items-center gap-3 rounded-sm px-3 py-2 text-xs font-semibold uppercase tracking-[0.06em] text-primary-foreground/80 hover:bg-primary-foreground/8 hover:text-primary-foreground">
+                  <CircleHelp className="h-4 w-4" /> Support
+                </button>
+                <button className="w-full flex items-center gap-3 rounded-sm px-3 py-2 text-xs font-semibold uppercase tracking-[0.06em] text-primary-foreground/80 hover:bg-primary-foreground/8 hover:text-primary-foreground">
+                  <LogOut className="h-4 w-4" /> Sign Out
+                </button>
+              </div>
+            </aside>
+          )}
+
+          <div className={`w-full ${session?.role === 'employee' ? 'grid gap-6 lg:grid-cols-[1fr_400px]' : ''}`}>
+            <div className={session?.role === 'employee' ? '' : `${isManager && viewMode === 'scrum' ? 'max-w-[1600px]' : 'max-w-6xl'} mx-auto`}>
+              {isTeamReportPage && (
+                <div className="rounded-md border bg-card px-4 py-3 mb-4">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex-1 min-w-[250px]">
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          placeholder="Search reports, team members, or IDs..."
+                          className="pl-9 h-9 bg-muted/30 border-0"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button className="inline-flex h-8 w-8 items-center justify-center rounded-sm border text-muted-foreground"><Bell className="h-4 w-4" /></button>
+                      <button className="inline-flex h-8 w-8 items-center justify-center rounded-sm border text-muted-foreground"><CircleHelp className="h-4 w-4" /></button>
+                      <button className="inline-flex h-8 w-8 items-center justify-center rounded-sm border text-muted-foreground"><Settings className="h-4 w-4" /></button>
+                    </div>
+                  </div>
+                </div>
+              )}
           
           {/* Header Section */}
-          <div className="mb-8">
+          <div className="mb-6">
             <div className="flex items-start justify-between gap-3 mb-2">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center">
+                <div className="w-10 h-10 rounded-md bg-primary flex items-center justify-center">
                   <FileText className="w-5 h-5 text-primary-foreground" />
                 </div>
                 <div>
@@ -684,7 +745,7 @@ export default function EmployeeReportsPage() {
               {isManager && managerDepartments.length > 0 && (
                 <Dialog open={showAddUserDialog} onOpenChange={setShowAddUserDialog}>
                   <DialogTrigger asChild>
-                    <Button className="gap-2">
+                    <Button className="gap-2 rounded-sm bg-primary text-primary-foreground">
                       <UserPlus className="h-4 w-4" />
                       Add Team User
                     </Button>
@@ -774,7 +835,7 @@ export default function EmployeeReportsPage() {
 
           {/* Search & Filters Section */}
           {canSearchOthers && (
-            <div className="mb-6 p-5 rounded-2xl bg-card border shadow-sm">
+            <div className="mb-5 p-4 rounded-md bg-card border shadow-sm">
               <div className="space-y-4">
                 {/* Search Bar */}
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-stretch">
@@ -786,13 +847,13 @@ export default function EmployeeReportsPage() {
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                      className="pl-11 h-12 w-full min-w-0 bg-background/50 border-muted-foreground/20 focus:border-primary"
+                      className="pl-11 h-10 w-full min-w-0 bg-background border-input focus:border-primary rounded-sm"
                     />
                   </div>
                   <Button 
                     onClick={handleSearch} 
                     disabled={loading} 
-                    className="h-12 shrink-0 px-6 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg shadow-primary/20"
+                    className="h-10 shrink-0 px-5 bg-primary text-primary-foreground hover:bg-primary/90 rounded-sm"
                   >
                     {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Search className="h-4 w-4 mr-2" /> Search</>}
                   </Button>
@@ -811,7 +872,7 @@ export default function EmployeeReportsPage() {
                   <select
                     value={selectedDepartment}
                     onChange={(e) => handleDepartmentChange(e.target.value)}
-                      className="h-9 pl-9 pr-8 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer appearance-none"
+                    className="h-9 pl-9 pr-8 rounded-sm border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer appearance-none"
                   >
                     <option value="all">All Departments</option>
                     {departments.map((dept) => (
@@ -822,7 +883,7 @@ export default function EmployeeReportsPage() {
                   </div>
                   
                   {/* Date Range */}
-                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-2 bg-muted/30 rounded-lg p-2 sm:p-1 w-full sm:w-auto min-w-0">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-2 bg-muted/30 rounded-sm p-2 sm:p-1 w-full sm:w-auto min-w-0">
                     <div className="relative w-full sm:w-auto min-w-0">
                       <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
                       <Input
@@ -878,8 +939,8 @@ export default function EmployeeReportsPage() {
               ) : (
                 <>
                   {/* Stats Cards */}
-                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-6">
-                    <div className="p-4 rounded-2xl bg-card border shadow-sm hover:shadow-md transition-shadow">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-5">
+                    <div className="p-4 rounded-md bg-card border shadow-sm">
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-xs font-medium text-muted-foreground">Total Reports</span>
                         <FileText className="h-4 w-4 text-muted-foreground" />
@@ -889,7 +950,7 @@ export default function EmployeeReportsPage() {
                     
                     <button
                       onClick={() => handleStatusFilter(statusFilter === 'working' ? 'all' : 'working')}
-                      className={`p-4 rounded-2xl border shadow-sm transition-all text-left ${
+                      className={`p-4 rounded-md border shadow-sm transition-all text-left ${
                         statusFilter === 'working' 
                           ? 'bg-emerald-500/10 border-emerald-500/30 shadow-emerald-500/10' 
                           : 'bg-card hover:shadow-md'
@@ -904,7 +965,7 @@ export default function EmployeeReportsPage() {
                       </p>
                     </button>
                     
-                    <div className="p-4 rounded-2xl bg-blue-500/5 border border-blue-500/20 shadow-sm">
+                    <div className="p-4 rounded-md bg-card border shadow-sm">
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-xs font-medium text-muted-foreground">On Duty</span>
                         <Shield className="h-4 w-4 text-blue-500" />
@@ -914,7 +975,7 @@ export default function EmployeeReportsPage() {
                     
                     <button
                       onClick={() => handleStatusFilter(statusFilter === 'leave' ? 'all' : 'leave')}
-                      className={`p-4 rounded-2xl border shadow-sm transition-all text-left ${
+                      className={`p-4 rounded-md border shadow-sm transition-all text-left ${
                         statusFilter === 'leave' 
                           ? 'bg-amber-500/10 border-amber-500/30 shadow-amber-500/10' 
                           : 'bg-card hover:shadow-md'
@@ -929,7 +990,7 @@ export default function EmployeeReportsPage() {
                       </p>
                     </button>
                     
-                    <div className="p-4 rounded-2xl bg-card border shadow-sm">
+                    <div className="p-4 rounded-md bg-card border shadow-sm">
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-xs font-medium text-muted-foreground">Employees</span>
                         <Users className="h-4 w-4 text-muted-foreground" />
@@ -940,19 +1001,19 @@ export default function EmployeeReportsPage() {
 
                   {/* View Mode Toggle */}
                   {isManager && (
-                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-5">
                       <div className="flex items-start sm:items-center gap-2 text-sm text-muted-foreground min-w-0">
                         <Sparkles className="h-4 w-4 shrink-0 mt-0.5 sm:mt-0" />
                         <span className="break-words">
                           Showing {reports.length} reports from {getShortDateIST(dateRange.start)} to {getShortDateIST(dateRange.end)}
                         </span>
                       </div>
-                      <div className="flex items-center bg-muted/50 rounded-lg p-1 shrink-0 self-start sm:self-auto">
+                      <div className="flex items-center bg-muted/50 rounded-sm p-1 shrink-0 self-start sm:self-auto border">
                         <button
                           onClick={() => setViewMode('scrum')}
                           className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
                             viewMode === 'scrum' 
-                              ? 'bg-background shadow-sm text-foreground' 
+                              ? 'bg-card shadow-sm text-foreground border rounded-sm' 
                               : 'text-muted-foreground hover:text-foreground'
                           }`}
                         >
@@ -962,7 +1023,7 @@ export default function EmployeeReportsPage() {
                           onClick={() => setViewMode('list')}
                           className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
                             viewMode === 'list' 
-                              ? 'bg-background shadow-sm text-foreground' 
+                              ? 'bg-card shadow-sm text-foreground border rounded-sm' 
                               : 'text-muted-foreground hover:text-foreground'
                           }`}
                         >
@@ -1371,6 +1432,7 @@ export default function EmployeeReportsPage() {
           )}
         </div>
       </div>
+    </div>
     </div>
   );
 }
