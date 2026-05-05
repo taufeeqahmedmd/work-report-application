@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { 
   Loader2, Search, FileText, Briefcase, Coffee, ArrowRight, Lock, Pencil, X, Check, 
-  ChevronDown, Filter, Users, Calendar, AlertCircle, Shield, LayoutGrid, List, 
+  ChevronDown, Filter, Users, Calendar, AlertCircle, Shield, LayoutGrid, List, UserCheck,
   TrendingUp, Clock, CheckCircle2, CalendarDays, Building2, Sparkles
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -14,6 +14,7 @@ import type { WorkReport, SessionUser, WorkStatus, EditPermissions, Department, 
 import { getISTTodayRange, getISTTodayDateString, getShortDayIST, getShortDateIST, formatDateForDisplay, convertUTCToISTDate } from '@/lib/date';
 import { logger } from '@/lib/logger';
 import { WorkReportCalendar } from '@/components/work-report-calendar';
+import { canMarkAttendance } from '@/lib/permissions';
 
 export default function EmployeeReportsPage() {
   const [session, setSession] = useState<SessionUser | null>(null);
@@ -631,6 +632,18 @@ export default function EmployeeReportsPage() {
                 </p>
               </div>
             </div>
+            {canMarkAttendance(session) && (
+              <div className="mt-4">
+                <Button
+                  onClick={() => (window.location.href = '/mark-attendance')}
+                  className="gap-2"
+                  variant="outline"
+                >
+                  <UserCheck className="h-4 w-4" />
+                  Mark Attendance
+                </Button>
+              </div>
+            )}
           </div>
 
           {/* Search & Filters Section */}

@@ -9,6 +9,7 @@ import { Loader2, Search, Users, Calendar, Filter, UserX, CheckCircle2, Building
 import { toast } from 'sonner';
 import type { SafeEmployee, SessionUser } from '@/types';
 import { getISTTodayDateString, getFullDateIST } from '@/lib/date';
+import { canMarkAttendance } from '@/lib/permissions';
 
 export default function MarkAttendancePage() {
   const [session, setSession] = useState<SessionUser | null>(null);
@@ -46,7 +47,7 @@ export default function MarkAttendancePage() {
       if (data.success) {
         setSession(data.data);
         // Check if user has permission
-        if (!data.data.pageAccess?.mark_attendance || data.data.department !== 'Operations') {
+        if (!canMarkAttendance(data.data)) {
           toast.error('You do not have permission to access this page');
           setTimeout(() => {
             window.location.href = '/';
@@ -204,7 +205,7 @@ export default function MarkAttendancePage() {
   }
 
   // Check permission
-  if (!session?.pageAccess?.mark_attendance || session.department !== 'Operations') {
+  if (!canMarkAttendance(session)) {
     return (
       <div className="min-h-screen pt-16 flex items-center justify-center">
         <div className="text-center">

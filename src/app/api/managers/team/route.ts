@@ -1,10 +1,11 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth';
 import { getTeamEmployeesForManager, getAllEmployees, getManagerDepartmentIds } from '@/lib/db/queries';
+import { canMarkAttendance } from '@/lib/permissions';
 import type { ApiResponse, SafeEmployee } from '@/types';
 
 // GET: Get team employees for the current manager or employees from assigned departments for Operations users
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const session = await getSession();
     
@@ -16,9 +17,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Check if user has mark_attendance permission
-    const hasMarkAttendancePermission = session.pageAccess?.mark_attendance === true;
-    
-    if (!hasMarkAttendancePermission) {
+    if (!canMarkAttendance(session)) {
       return NextResponse.json<ApiResponse>(
         { success: false, error: 'You do not have permission to access this endpoint' },
         { status: 403 }

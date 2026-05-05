@@ -2,12 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth';
 import { 
   getEmployeeByEmployeeId,
-  getTeamEmployeesForManager,
   getWorkReportByEmployeeAndDate,
   createWorkReport,
-  updateWorkReport,
-  getManagerDepartmentIds
+  updateWorkReport
 } from '@/lib/db/queries';
+import { canMarkAttendance } from '@/lib/permissions';
 import type { ApiResponse, WorkReport } from '@/types';
 
 // POST: Mark an employee as present (working)
@@ -22,11 +21,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if user has mark_attendance permission or is a manager
-    const hasMarkAttendancePermission = session.pageAccess?.mark_attendance === true;
-    const isManager = session.role === 'manager';
-    
-    if (!hasMarkAttendancePermission && !isManager) {
+    // Check if user has mark_attendance permission
+    if (!canMarkAttendance(session)) {
       return NextResponse.json<ApiResponse>(
         { success: false, error: 'You do not have permission to mark employees as present' },
         { status: 403 }
@@ -62,35 +58,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // For managers, verify that the employee is in their assigned departments
-    if (session.role === 'manager') {
-      const teamEmployees = await getTeamEmployeesForManager(session.id);
-      const isTeamMember = teamEmployees.some(emp => emp.employeeId === employeeId);
-      
-      if (!isTeamMember) {
-        return NextResponse.json<ApiResponse>(
-          { success: false, error: 'You can only mark present for employees in your assigned departments' },
-          { status: 403 }
-        );
-      }
-    } else if (session.department === 'Operations') {
-      // For Operations users: if they have departments assigned, check those; otherwise allow all
-      const departmentIds = await getManagerDepartmentIds(session.id);
-      
-      if (departmentIds.length > 0) {
-        // Has departments assigned - check if employee is in those departments
-        const teamEmployees = await getTeamEmployeesForManager(session.id);
-        const isTeamMember = teamEmployees.some(emp => emp.employeeId === employeeId);
-        
-        if (!isTeamMember) {
-          return NextResponse.json<ApiResponse>(
-            { success: false, error: 'You can only mark present for employees in your assigned departments' },
-            { status: 403 }
-          );
-        }
-      }
-      // If no departments assigned, Operations users can mark any employee
-    }
+    // Users with mark_attendance permission can mark attendance regardless of role/department.
 
     // Check if a work report already exists for this employee and date
     const existingReport = await getWorkReportByEmployeeAndDate(employeeId, date);

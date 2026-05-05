@@ -1,21 +1,29 @@
-import type { SessionUser } from '@/types';
+import type { PageAccess, SessionUser } from '@/types';
 
 /**
- * Check if a user can mark holidays
- * - Managers, Admins, and Super Admins: Always allowed
- * - Operations department: Only if pageAccess.mark_holidays === true
+ * Generic page-access checker.
+ * Uses strict true-check so undefined/null is treated as no access.
  */
-export function canMarkHolidays(session: SessionUser): boolean {
-  // Managers, Admins, and Super Admins can always mark holidays
-  if (session.role === 'manager' || session.role === 'admin' || session.role === 'superadmin') {
-    return true;
-  }
-  
-  // Operations department employees need explicit permission
-  if (session.department === 'Operations' && session.pageAccess?.mark_holidays === true) {
-    return true;
-  }
-  
-  return false;
+export function hasPageAccess(
+  session: SessionUser | null | undefined,
+  accessKey: keyof PageAccess
+): boolean {
+  return session?.pageAccess?.[accessKey] === true;
+}
+
+/**
+ * Check if a user can mark holidays.
+ * Access is fully permission-driven.
+ */
+export function canMarkHolidays(session: SessionUser | null | undefined): boolean {
+  return hasPageAccess(session, 'mark_holidays');
+}
+
+/**
+ * Check if a user can mark attendance.
+ * Access is fully permission-driven.
+ */
+export function canMarkAttendance(session: SessionUser | null | undefined): boolean {
+  return hasPageAccess(session, 'mark_attendance');
 }
 

@@ -18,6 +18,7 @@ import { ThemeToggle } from '@/components/theme-toggle';
 import { Menu, LogOut, User, LayoutDashboard, FileText, BarChart3, ChevronDown, ArrowRight, Home, CalendarDays, UserCheck } from 'lucide-react';
 import type { SessionUser, PageAccess } from '@/types';
 import { DEFAULT_PAGE_ACCESS } from '@/types';
+import { canMarkAttendance, canMarkHolidays } from '@/lib/permissions';
 
 export function Navbar() {
   const router = useRouter();
@@ -104,8 +105,7 @@ export function Navbar() {
   const allNavLinks: NavLink[] = [
     { href: '/employee-dashboard', label: 'Dashboard', icon: Home, requireAuth: true, accessKey: 'dashboard' as keyof PageAccess },
     { href: '/work-report', label: 'Submit Report', icon: FileText, accessKey: 'submit_report' as keyof PageAccess },
-    // Mark Attendance for Operations users with permission
-    { href: '/mark-attendance', label: 'Mark Attendance', icon: UserCheck, requireAuth: true, accessKey: 'mark_attendance' as keyof PageAccess, requireDepartment: 'Operations' },
+    { href: '/mark-attendance', label: 'Mark Attendance', icon: UserCheck, requireAuth: true, accessKey: 'mark_attendance' as keyof PageAccess },
   ];
 
   const navLinks = allNavLinks.filter(link => {
@@ -136,17 +136,10 @@ export function Navbar() {
   );
 
   // Holidays link - show if user can mark holidays (Manager, Admin, Super Admin, or Operations with permission)
-  const canMarkHolidays = user && (
-    user.role === 'manager' || 
-    user.role === 'admin' || 
-    user.role === 'superadmin' || 
-    (user.department === 'Operations' && pageAccess?.mark_holidays === true)
-  );
+  const canMarkHolidaysAccess = canMarkHolidays(user);
 
-  // Mark Attendance link - show if Operations user with mark_attendance permission
-  const canMarkAttendance = user && (
-    user.department === 'Operations' && pageAccess?.mark_attendance === true
-  );
+  // Mark Attendance link - show for any user with mark_attendance permission
+  const canMarkAttendanceAccess = canMarkAttendance(user);
 
   return (
     <nav 
@@ -237,7 +230,7 @@ export function Navbar() {
                       </Link>
                     </DropdownMenuItem>
                   ))}
-                  {canMarkHolidays && (
+          {canMarkHolidaysAccess && (
                     <>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem asChild>
@@ -251,7 +244,7 @@ export function Navbar() {
                       </DropdownMenuItem>
                     </>
                   )}
-                  {canMarkAttendance && (
+          {canMarkAttendanceAccess && (
                     <>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem asChild>
@@ -428,7 +421,7 @@ export function Navbar() {
                           </Link>
                         );
                       })}
-                      {canMarkHolidays && (
+                {canMarkHolidaysAccess && (
                         <Link
                           href="/holidays"
                           className={`flex items-center gap-3 px-4 py-3 text-sm rounded-lg transition-all duration-200 active-press ${
@@ -442,7 +435,7 @@ export function Navbar() {
                           Holidays
                         </Link>
                       )}
-                      {canMarkAttendance && (
+                {canMarkAttendanceAccess && (
                         <Link
                           href="/mark-attendance"
                           className={`flex items-center gap-3 px-4 py-3 text-sm rounded-lg transition-all duration-200 active-press ${

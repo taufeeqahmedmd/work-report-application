@@ -109,29 +109,7 @@ function getUserPageAccess(payload: { pageAccess?: PageAccess | null; role: User
 }
 
 // Check if user has access to a specific route
-function hasRouteAccess(pathname: string, pageAccess: PageAccess, role?: UserRole, department?: string): boolean {
-  // Special handling for mark-attendance route
-  if (pathname.startsWith('/mark-attendance')) {
-    // Only Operations department users with mark_attendance permission
-    if (department === 'Operations' && pageAccess.mark_attendance === true) {
-      return true;
-    }
-    return false;
-  }
-
-  // Special handling for holidays route
-  if (pathname.startsWith('/holidays')) {
-    // Managers, Admins, and Super Admins always have access
-    if (role === 'manager' || role === 'admin' || role === 'superadmin') {
-      return true;
-    }
-    // Operations department employees need explicit permission
-    if (department === 'Operations' && pageAccess.mark_holidays === true) {
-      return true;
-    }
-    return false;
-  }
-
+function hasRouteAccess(pathname: string, pageAccess: PageAccess): boolean {
   // Find matching route
   for (const [route, accessKey] of Object.entries(ROUTE_TO_PAGE_ACCESS)) {
     if (pathname.startsWith(route)) {
@@ -179,14 +157,13 @@ export async function middleware(request: NextRequest) {
     }
 
     const role = payload.role as UserRole;
-    const department = payload.department as string | undefined;
     const pageAccess = getUserPageAccess({ 
       pageAccess: payload.pageAccess as PageAccess | null | undefined, 
       role 
     });
 
     // Check page access permissions
-    if (!hasRouteAccess(pathname, pageAccess, role, department)) {
+    if (!hasRouteAccess(pathname, pageAccess)) {
       // Redirect to home page if user doesn't have access
       return NextResponse.redirect(new URL('/', request.url));
     }
