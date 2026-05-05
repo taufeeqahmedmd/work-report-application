@@ -13,9 +13,19 @@ type TeamCheckpoint = {
   title: string;
   description: string | null;
   department: string;
+  recurrenceType: 'one_time' | 'daily' | 'weekly' | 'monthly';
+  startsOn: string | null;
+  endsOn: string | null;
+  dueDate: string | null;
   assigneeCount: number;
   completedCount: number;
   createdAt: string;
+  assignments: Array<{
+    assignmentId: number;
+    employeeId: string;
+    name: string | null;
+    isCompleted: boolean;
+  }>;
 };
 
 export default function ManageTeamPage() {
@@ -38,8 +48,13 @@ export default function ManageTeamPage() {
     description: '',
     department: '',
     assignmentMode: 'team' as 'team' | 'individual',
+    recurrenceType: 'one_time' as 'one_time' | 'daily' | 'weekly' | 'monthly',
+    startsOn: '',
+    endsOn: '',
+    dueDate: '',
   });
   const [selectedEmployeeIds, setSelectedEmployeeIds] = useState<string[]>([]);
+  const [assignmentSelection, setAssignmentSelection] = useState<Record<number, string[]>>({});
 
   const teamUsersForSelectedDepartment = useMemo(
     () => users.filter(u => u.department === newCheckpoint.department && u.status === 'active'),
@@ -165,11 +180,49 @@ export default function ManageTeamPage() {
         return;
       }
       toast.success(data.message || 'Checkpoint created');
-      setNewCheckpoint({ title: '', description: '', department: '', assignmentMode: 'team' });
+      setNewCheckpoint({
+        title: '',
+        description: '',
+        department: '',
+        assignmentMode: 'team',
+        recurrenceType: 'one_time',
+        startsOn: '',
+        endsOn: '',
+        dueDate: '',
+      });
       setSelectedEmployeeIds([]);
       await fetchData();
     } catch {
       toast.error('Failed to create checkpoint');
+    }
+  };
+
+  const handleCheckpointAssignmentUpdate = async (
+    checkpointId: number,
+    action: 'assign' | 'remove'
+  ) => {
+    const employeeIds = assignmentSelection[checkpointId] || [];
+    if (employeeIds.length === 0) {
+      toast.error('Select at least one user');
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/manage-team/checkpoints', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action, checkpointId, employeeIds }),
+      });
+      const data = await response.json();
+      if (!data.success) {
+        toast.error(data.error || 'Failed to update assignments');
+        return;
+      }
+      toast.success(data.message || 'Assignments updated');
+      setAssignmentSelection(prev => ({ ...prev, [checkpointId]: [] }));
+      await fetchData();
+    } catch {
+      toast.error('Failed to update assignments');
     }
   };
 
@@ -254,6 +307,49 @@ export default function ManageTeamPage() {
                 <option value="individual">Assign selected employees</option>
               </select>
             </div>
+            <div>
+              <Label>Checklist Type</Label>
+              <select
+                className="h-10 w-full rounded-md border bg-background px-3 text-sm"
+                value={newCheckpoint.recurrenceType}
+                onChange={(e) => setNewCheckpoint(prev => ({ ...prev, recurrenceType: e.target.value as 'one_time' | 'daily' | 'weekly' | 'monthly' }))}
+              >
+                <option value="one_time">Particular Time</option>
+                <option value="daily">Recurring - Daily</option>
+                <option value="weekly">Recurring - Weekly</option>
+                <option value="monthly">Recurring - Monthly</option>
+              </select>
+            </div>
+
+            {newCheckpoint.recurrenceType === 'one_time' ? (
+              <div>
+                <Label>Due Date</Label>
+                <Input
+                  type="date"
+                  value={newCheckpoint.dueDate}
+                  onChange={(e) => setNewCheckpoint(prev => ({ ...prev, dueDate: e.target.value }))}
+                />
+              </div>
+            ) : (
+              <>
+                <div>
+                  <Label>Start Date</Label>
+                  <Input
+                    type="date"
+                    value={newCheckpoint.startsOn}
+                    onChange={(e) => setNewCheckpoint(prev => ({ ...prev, startsOn: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <Label>End Date</Label>
+                  <Input
+                    type="date"
+                    value={newCheckpoint.endsOn}
+                    onChange={(e) => setNewCheckpoint(prev => ({ ...prev, endsOn: e.target.value }))}
+                  />
+                </div>
+              </>
+            )}
 
             {newCheckpoint.assignmentMode === 'individual' && (
               <div className="md:col-span-2 rounded-md border p-3">
@@ -290,6 +386,54 @@ export default function ManageTeamPage() {
                 <p className="font-medium">{checkpoint.title}</p>
                 <p className="text-xs text-muted-foreground">{checkpoint.department} - {checkpoint.assigneeCount} assigned - {checkpoint.completedCount} completed</p>
                 {checkpoint.description ? <p className="text-sm mt-1">{checkpoint.description}</p> : null}
+                <p className="text-xs text-muted-foreground mt-1">
+                  {checkpoint.recurrenceType === 'one_time'
+                    ? `Particular time${checkpoint.dueDate ? ` (Due: ${checkpoint.dueDate})` : ''}`
+                    : `Recurring: ${checkpoint.recurrenceType}${checkpoint.startsOn || checkpoint.endsOn ? ` (${checkpoint.startsOn || 'Any'} to ${checkpoint.endsOn || 'Open'})` : ''}`}
+                </p>
+
+                <div className="mt-3 grid gap-2 md:grid-cols-[1fr_auto_auto]">
+                  <select
+                    multiple
+                    className="min-h-24 rounded-md border bg-background px-2 py-1 text-sm"
+                    value={assignmentSelection[checkpoint.id] || []}
+                    onChange={(e) => {
+                      const values = Array.from(e.target.selectedOptions).map(option => option.value);
+                      setAssignmentSelection(prev => ({ ...prev, [checkpoint.id]: values }));
+                    }}
+                  >
+                    {users
+                      .filter(user => user.department === checkpoint.department && user.status === 'active')
+                      .map(user => (
+                        <option key={`${checkpoint.id}-${user.employeeId}`} value={user.employeeId}>
+                          {user.name} ({user.employeeId})
+                        </option>
+                      ))}
+                  </select>
+                  <Button variant="outline" onClick={() => handleCheckpointAssignmentUpdate(checkpoint.id, 'assign')}>
+                    Add to user
+                  </Button>
+                  <Button variant="destructive" onClick={() => handleCheckpointAssignmentUpdate(checkpoint.id, 'remove')}>
+                    Remove from user
+                  </Button>
+                </div>
+
+                {checkpoint.assignments.length > 0 && (
+                  <div className="mt-3 rounded-md border p-2">
+                    <p className="text-xs font-medium text-muted-foreground mb-2">Current assignments</p>
+                    <div className="flex flex-wrap gap-2">
+                      {checkpoint.assignments.map(assignment => (
+                        <span
+                          key={`${checkpoint.id}-${assignment.assignmentId}`}
+                          className="inline-flex items-center rounded-md border px-2 py-1 text-xs"
+                        >
+                          {(assignment.name || assignment.employeeId)}
+                          {assignment.isCompleted ? ' (Done)' : ''}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             ))}
           </div>

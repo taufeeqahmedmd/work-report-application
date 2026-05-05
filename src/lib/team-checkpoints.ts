@@ -5,6 +5,10 @@ export interface TeamCheckpointRow {
   title: string;
   description: string | null;
   department: string;
+  recurrenceType: 'one_time' | 'daily' | 'weekly' | 'monthly';
+  startsOn: string | null;
+  endsOn: string | null;
+  dueDate: string | null;
   createdBy: number | null;
   createdAt: string;
 }
@@ -26,10 +30,19 @@ export async function ensureCheckpointTables(): Promise<void> {
       title VARCHAR(255) NOT NULL,
       description TEXT,
       department VARCHAR(255) NOT NULL,
+      recurrence_type VARCHAR(20) NOT NULL DEFAULT 'one_time',
+      starts_on DATE,
+      ends_on DATE,
+      due_date DATE,
       created_by INTEGER REFERENCES employees(id) ON DELETE SET NULL,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
   `);
+
+  await pool.query(`ALTER TABLE team_checkpoints ADD COLUMN IF NOT EXISTS recurrence_type VARCHAR(20) NOT NULL DEFAULT 'one_time'`);
+  await pool.query(`ALTER TABLE team_checkpoints ADD COLUMN IF NOT EXISTS starts_on DATE`);
+  await pool.query(`ALTER TABLE team_checkpoints ADD COLUMN IF NOT EXISTS ends_on DATE`);
+  await pool.query(`ALTER TABLE team_checkpoints ADD COLUMN IF NOT EXISTS due_date DATE`);
 
   await pool.query(`
     CREATE TABLE IF NOT EXISTS employee_checkpoints (
