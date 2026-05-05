@@ -215,47 +215,47 @@ function WorkReportCalendarComponent({ reports, holidays = [], onDateClick }: Wo
   ];
 
   return (
-    <div className="w-full rounded-2xl border bg-card shadow-sm overflow-hidden backdrop-blur-sm">
+    <div className="w-full rounded-xl sm:rounded-2xl border bg-card shadow-sm overflow-hidden backdrop-blur-sm">
       {/* Header */}
-      <div className="p-5 border-b border-border/50 bg-gradient-to-br from-primary/5 via-primary/3 to-transparent">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-lg shadow-primary/20">
-              <CalendarIcon className="h-5 w-5 text-primary-foreground" />
+      <div className="p-3 sm:p-5 border-b border-border/50 bg-gradient-to-br from-primary/5 via-primary/3 to-transparent">
+        <div className="flex items-center justify-between mb-3 sm:mb-4 gap-2">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-lg shadow-primary/20 flex-shrink-0">
+              <CalendarIcon className="h-4 w-4 sm:h-5 sm:w-5 text-primary-foreground" />
             </div>
-            <div>
-              <h3 className="font-semibold text-base">Calendar</h3>
-              <p className="text-xs text-muted-foreground">Work report status</p>
+            <div className="min-w-0">
+              <h3 className="font-semibold text-sm sm:text-base">Calendar</h3>
+              <p className="text-[11px] sm:text-xs text-muted-foreground truncate">Work report status</p>
             </div>
           </div>
           <Button
             variant="ghost"
             size="sm"
             onClick={goToToday}
-            className="text-xs h-8 px-3 hover:bg-primary/10"
+            className="text-xs h-8 px-3 hover:bg-primary/10 flex-shrink-0"
           >
             Today
           </Button>
         </div>
         
         {/* Month Navigation */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-2">
           <Button
             variant="ghost"
             size="sm"
             onClick={goToPreviousMonth}
-            className="h-9 w-9 p-0 rounded-lg hover:bg-primary/10"
+            className="h-9 w-9 p-0 rounded-lg hover:bg-primary/10 flex-shrink-0"
           >
             <ChevronLeft className="h-4 w-4" />
           </Button>
-          <h4 className="font-semibold text-lg tracking-tight">
+          <h4 className="font-semibold text-base sm:text-lg tracking-tight truncate text-center">
             {monthNames[currentMonth]} {currentYear}
           </h4>
           <Button
             variant="ghost"
             size="sm"
             onClick={goToNextMonth}
-            className="h-9 w-9 p-0 rounded-lg hover:bg-primary/10"
+            className="h-9 w-9 p-0 rounded-lg hover:bg-primary/10 flex-shrink-0"
           >
             <ChevronRight className="h-4 w-4" />
           </Button>
@@ -263,18 +263,18 @@ function WorkReportCalendarComponent({ reports, holidays = [], onDateClick }: Wo
       </div>
 
       {/* Calendar Grid */}
-      <div className="p-5 bg-gradient-to-b from-card to-card/50">
+      <div className="p-3 sm:p-5 bg-gradient-to-b from-card to-card/50">
         {/* Day Headers */}
-        <div className="grid grid-cols-7 gap-1.5 mb-3">
+        <div className="grid grid-cols-7 gap-1 sm:gap-1.5 mb-2 sm:mb-3">
           {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map((day) => (
-            <div key={day} className="text-center text-xs font-semibold text-muted-foreground py-2">
+            <div key={day} className="text-center text-[10px] sm:text-xs font-semibold text-muted-foreground py-1.5 sm:py-2">
               {day}
             </div>
           ))}
         </div>
 
         {/* Calendar Days */}
-        <div className="grid grid-cols-7 gap-1.5">
+        <div className="grid grid-cols-7 gap-1 sm:gap-1.5">
           {calendarDays.map(({ dateStr, day, isCurrentMonth }) => {
             const status = getDateStatus(dateStr);
             const isToday = dateStr === today;
@@ -287,8 +287,8 @@ function WorkReportCalendarComponent({ reports, holidays = [], onDateClick }: Wo
                 key={dateStr}
                 onClick={() => onDateClick?.(dateStr)}
                 className={`
-                  aspect-square rounded-xl text-sm font-semibold transition-all duration-200
-                  hover:scale-110 active:scale-95 hover:shadow-md relative
+                  aspect-square rounded-lg sm:rounded-xl text-[11px] sm:text-sm font-semibold transition-all duration-200
+                  hover:scale-110 active:scale-95 hover:shadow-md relative min-w-0
                   ${getDateColorClass(dateStr, isCurrentMonth)}
                   ${!isCurrentMonth ? 'opacity-30' : ''}
                   ${onDateClick ? 'cursor-pointer' : 'cursor-default'}
@@ -319,46 +319,46 @@ function WorkReportCalendarComponent({ reports, holidays = [], onDateClick }: Wo
         </div>
 
         {/* Legend */}
-        <div className="mt-5 pt-4 border-t border-border/50">
-          <p className="text-xs font-medium text-muted-foreground mb-3">Legend</p>
-          <div className="grid grid-cols-2 gap-2.5 text-xs">
-            <div className="flex items-center gap-2.5 p-2 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
-              <div className="w-4 h-4 rounded-md bg-emerald-500 shadow-sm"></div>
-              <span className="text-muted-foreground font-medium">Working</span>
+        <div className="mt-4 sm:mt-5 pt-3 sm:pt-4 border-t border-border/50">
+          <p className="text-[11px] sm:text-xs font-medium text-muted-foreground mb-2 sm:mb-3">Legend</p>
+          <div className="grid grid-cols-2 gap-1.5 sm:gap-2.5 text-[11px] sm:text-xs">
+            <div className="flex items-center gap-1.5 sm:gap-2.5 p-1.5 sm:p-2 rounded-md sm:rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors min-w-0">
+              <div className="w-3 h-3 sm:w-4 sm:h-4 rounded sm:rounded-md bg-emerald-500 shadow-sm flex-shrink-0"></div>
+              <span className="text-muted-foreground font-medium truncate">Working</span>
             </div>
-            <div className="flex items-center gap-2.5 p-2 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
-              <div className="w-4 h-4 rounded-md bg-yellow-500 shadow-sm"></div>
-              <span className="text-muted-foreground font-medium">Half Day</span>
+            <div className="flex items-center gap-1.5 sm:gap-2.5 p-1.5 sm:p-2 rounded-md sm:rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors min-w-0">
+              <div className="w-3 h-3 sm:w-4 sm:h-4 rounded sm:rounded-md bg-yellow-500 shadow-sm flex-shrink-0"></div>
+              <span className="text-muted-foreground font-medium truncate">Half Day</span>
             </div>
-            <div className="flex items-center gap-2.5 p-2 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
-              <div className="w-4 h-4 rounded-md bg-orange-500 shadow-sm"></div>
-              <span className="text-muted-foreground font-medium">Leave</span>
+            <div className="flex items-center gap-1.5 sm:gap-2.5 p-1.5 sm:p-2 rounded-md sm:rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors min-w-0">
+              <div className="w-3 h-3 sm:w-4 sm:h-4 rounded sm:rounded-md bg-orange-500 shadow-sm flex-shrink-0"></div>
+              <span className="text-muted-foreground font-medium truncate">Leave</span>
             </div>
-            <div className="flex items-center gap-2.5 p-2 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
-              <div className="w-4 h-4 rounded-md bg-red-500 shadow-sm"></div>
-              <span className="text-muted-foreground font-medium">Not Submitted</span>
+            <div className="flex items-center gap-1.5 sm:gap-2.5 p-1.5 sm:p-2 rounded-md sm:rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors min-w-0">
+              <div className="w-3 h-3 sm:w-4 sm:h-4 rounded sm:rounded-md bg-red-500 shadow-sm flex-shrink-0"></div>
+              <span className="text-muted-foreground font-medium truncate">Not Submitted</span>
             </div>
-            <div className="flex items-center gap-2.5 p-2 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
-              <div className="w-4 h-4 rounded-md relative overflow-hidden">
+            <div className="flex items-center gap-1.5 sm:gap-2.5 p-1.5 sm:p-2 rounded-md sm:rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors min-w-0">
+              <div className="w-3 h-3 sm:w-4 sm:h-4 rounded sm:rounded-md relative overflow-hidden flex-shrink-0">
                 <div className="absolute inset-0 bg-emerald-500" style={{ clipPath: 'polygon(0 0, 100% 0, 0 100%)' }}></div>
                 <div className="absolute inset-0 bg-blue-600" style={{ clipPath: 'polygon(100% 0, 100% 100%, 0 100%)' }}></div>
               </div>
-              <span className="text-muted-foreground font-medium">On Duty</span>
+              <span className="text-muted-foreground font-medium truncate">On Duty</span>
             </div>
-            <div className="flex items-center gap-2.5 p-2 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
-              <div className="w-4 h-4 rounded-md relative overflow-hidden">
+            <div className="flex items-center gap-1.5 sm:gap-2.5 p-1.5 sm:p-2 rounded-md sm:rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors min-w-0">
+              <div className="w-3 h-3 sm:w-4 sm:h-4 rounded sm:rounded-md relative overflow-hidden flex-shrink-0">
                 <div className="absolute inset-0 bg-yellow-500" style={{ clipPath: 'polygon(0 0, 100% 0, 0 100%)' }}></div>
                 <div className="absolute inset-0 bg-blue-600" style={{ clipPath: 'polygon(100% 0, 100% 100%, 0 100%)' }}></div>
               </div>
-              <span className="text-muted-foreground font-medium">Half + Duty</span>
+              <span className="text-muted-foreground font-medium truncate">Half + Duty</span>
             </div>
-            <div className="flex items-center gap-2.5 p-2 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
-              <div className="w-4 h-4 rounded-md bg-gray-500 shadow-sm"></div>
-              <span className="text-muted-foreground font-medium">Sunday</span>
+            <div className="flex items-center gap-1.5 sm:gap-2.5 p-1.5 sm:p-2 rounded-md sm:rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors min-w-0">
+              <div className="w-3 h-3 sm:w-4 sm:h-4 rounded sm:rounded-md bg-gray-500 shadow-sm flex-shrink-0"></div>
+              <span className="text-muted-foreground font-medium truncate">Sunday</span>
             </div>
-            <div className="flex items-center gap-2.5 p-2 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
-              <div className="w-4 h-4 rounded-md bg-gradient-to-br from-violet-500 to-purple-600 shadow-sm"></div>
-              <span className="text-muted-foreground font-medium">Holiday</span>
+            <div className="flex items-center gap-1.5 sm:gap-2.5 p-1.5 sm:p-2 rounded-md sm:rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors min-w-0">
+              <div className="w-3 h-3 sm:w-4 sm:h-4 rounded sm:rounded-md bg-gradient-to-br from-violet-500 to-purple-600 shadow-sm flex-shrink-0"></div>
+              <span className="text-muted-foreground font-medium truncate">Holiday</span>
             </div>
           </div>
         </div>

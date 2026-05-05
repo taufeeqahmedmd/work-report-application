@@ -257,19 +257,19 @@ export default function EmployeeDashboardPage() {
   }
 
   return (
-    <div className="min-h-screen pt-16 pb-12 bg-gradient-to-b from-background via-background to-muted/20">
-      <div className="container px-4 md:px-6 py-8 max-w-full">
+    <div className="min-h-screen pt-16 pb-12 bg-gradient-to-b from-background via-background to-muted/20 overflow-x-hidden">
+      <div className="container px-3 sm:px-4 md:px-6 py-4 sm:py-8 max-w-full">
         <div className="w-full">
           
           {/* Header Section */}
-          <div className="mb-8">
+          <div className="mb-5 sm:mb-8">
             <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center">
-                <User className="w-5 h-5 text-primary-foreground" />
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center flex-shrink-0">
+                <User className="w-4 h-4 sm:w-5 sm:h-5 text-primary-foreground" />
               </div>
-              <div>
-                <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
-                <p className="text-sm text-muted-foreground">
+              <div className="min-w-0">
+                <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Dashboard</h1>
+                <p className="text-xs sm:text-sm text-muted-foreground truncate">
                   Welcome back, {session.name.split(' ')[0]}
                 </p>
               </div>
@@ -277,16 +277,16 @@ export default function EmployeeDashboardPage() {
           </div>
 
           {/* Main Content Grid with Calendar */}
-          <div className="grid gap-6 lg:grid-cols-[1fr_400px] mb-6">
-            <div className="space-y-6">
+          <div className="grid gap-4 sm:gap-6 lg:grid-cols-[1fr_400px] mb-6">
+            <div className="space-y-4 sm:space-y-6 min-w-0">
           {/* Combined Profile & Action Card */}
-          <div className="p-6 rounded-2xl bg-card border shadow-sm">
-            <div className="flex flex-col lg:flex-row items-start gap-6">
+          <div className="p-4 sm:p-6 rounded-2xl bg-card border shadow-sm">
+            <div className="flex flex-col lg:flex-row items-start gap-4 sm:gap-6">
               {/* Left Section - Profile Info */}
-              <div className="flex items-start gap-4 flex-1 min-w-0">
+              <div className="flex items-start gap-3 sm:gap-4 flex-1 min-w-0 w-full">
                 {/* Avatar */}
                 <div className="relative flex-shrink-0">
-                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-primary/80 text-primary-foreground flex items-center justify-center text-2xl font-bold shadow-lg shadow-primary/20">
+                  <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-br from-primary to-primary/80 text-primary-foreground flex items-center justify-center text-xl sm:text-2xl font-bold shadow-lg shadow-primary/20">
                     {session.name.charAt(0).toUpperCase()}
                   </div>
                   <div className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-full border-2 border-card flex items-center justify-center ${
@@ -306,31 +306,31 @@ export default function EmployeeDashboardPage() {
                 
                 {/* Info */}
                 <div className="flex-1 min-w-0">
-                  <h2 className="text-xl font-semibold truncate">{session.name}</h2>
-                  <div className="flex items-center gap-1.5 text-sm text-muted-foreground mb-3">
-                    <Mail className="w-3.5 h-3.5" />
+                  <h2 className="text-base sm:text-xl font-semibold truncate">{session.name}</h2>
+                  <div className="flex items-center gap-1.5 text-xs sm:text-sm text-muted-foreground mb-3">
+                    <Mail className="w-3.5 h-3.5 flex-shrink-0" />
                     <span className="truncate">{session.email}</span>
                   </div>
                   
                   {/* Badges */}
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground bg-muted/50 px-2.5 py-1 rounded-lg">
+                  <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                    <span className="inline-flex items-center gap-1 sm:gap-1.5 text-[11px] sm:text-xs font-medium text-muted-foreground bg-muted/50 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-lg">
                       <User className="h-3 w-3" />
                       {session.employeeId}
                     </span>
-                    <span className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground bg-muted/50 px-2.5 py-1 rounded-lg">
-                      <Building2 className="h-3 w-3" />
-                      {session.department}
+                    <span className="inline-flex items-center gap-1 sm:gap-1.5 text-[11px] sm:text-xs font-medium text-muted-foreground bg-muted/50 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-lg max-w-full">
+                      <Building2 className="h-3 w-3 flex-shrink-0" />
+                      <span className="truncate">{session.department}</span>
                     </span>
                     {todayReport ? (
-                      <span className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-lg bg-muted/50 text-foreground">
-                        <CheckCircle2 className="h-3 w-3" />
-                        Today&apos;s Report Submitted
+                      <span className="inline-flex items-center gap-1 sm:gap-1.5 text-[11px] sm:text-xs font-medium px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-lg bg-muted/50 text-foreground">
+                        <CheckCircle2 className="h-3 w-3 flex-shrink-0" />
+                        <span className="truncate">Report Submitted</span>
                       </span>
                     ) : (
-                      <span className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-lg bg-red-500/10 text-red-600 dark:text-red-400">
-                        <AlertCircle className="h-3 w-3" />
-                        Report Pending
+                      <span className="inline-flex items-center gap-1 sm:gap-1.5 text-[11px] sm:text-xs font-medium px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-lg bg-red-500/10 text-red-600 dark:text-red-400">
+                        <AlertCircle className="h-3 w-3 flex-shrink-0" />
+                        <span className="truncate">Report Pending</span>
                       </span>
                     )}
                   </div>
@@ -338,19 +338,19 @@ export default function EmployeeDashboardPage() {
               </div>
 
               {/* Right Section - Today's Report Action */}
-              <div className="flex flex-col lg:items-end lg:text-right w-full lg:w-auto lg:min-w-[200px]">
-                <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-3 bg-muted/50 lg:ml-auto">
+              <div className="flex flex-col lg:items-end lg:text-right w-full lg:w-auto lg:min-w-[200px] pt-4 lg:pt-0 border-t lg:border-t-0 border-border/60">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center mb-2 sm:mb-3 bg-muted/50 lg:ml-auto">
                   {todayReport ? (
-                    <CheckCircle2 className="w-6 h-6 text-emerald-600" />
+                    <CheckCircle2 className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-600" />
                   ) : (
-                    <CalendarDays className="w-6 h-6 text-primary" />
+                    <CalendarDays className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
                   )}
                 </div>
                 
-                <h3 className="font-semibold mb-1">
+                <h3 className="font-semibold text-sm sm:text-base mb-1">
                   {todayReport ? 'Report Submitted' : 'Today\'s Report'}
                 </h3>
-                <p className="text-sm text-muted-foreground mb-4">
+                <p className="text-xs sm:text-sm text-muted-foreground mb-3 sm:mb-4">
                   {todayReport 
                     ? `You marked ${todayReport.status === 'working' ? 'working' : 'leave'} for today.`
                     : 'Don\'t forget to submit your daily work report.'}
@@ -373,50 +373,50 @@ export default function EmployeeDashboardPage() {
           </div>
 
           {/* Stats Grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5 sm:gap-3 mb-4 sm:mb-6">
             {/* Total Reports */}
-            <div className="p-4 rounded-2xl bg-card border shadow-sm hover:shadow-md transition-shadow">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-medium text-muted-foreground">Total Reports</span>
-                <FileText className="h-4 w-4 text-muted-foreground" />
+            <div className="p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-card border shadow-sm hover:shadow-md transition-shadow min-w-0">
+              <div className="flex items-center justify-between mb-1.5 sm:mb-2 gap-1">
+                <span className="text-[11px] sm:text-xs font-medium text-muted-foreground truncate">Total Reports</span>
+                <FileText className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground flex-shrink-0" />
               </div>
-              <p className="text-3xl font-bold">{stats.total}</p>
+              <p className="text-2xl sm:text-3xl font-bold">{stats.total}</p>
             </div>
 
             {/* Working Days */}
-            <div className="p-4 rounded-2xl bg-card border shadow-sm">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-medium text-muted-foreground">Working Days</span>
-                <Briefcase className="h-4 w-4 text-muted-foreground" />
+            <div className="p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-card border shadow-sm min-w-0">
+              <div className="flex items-center justify-between mb-1.5 sm:mb-2 gap-1">
+                <span className="text-[11px] sm:text-xs font-medium text-muted-foreground truncate">Working Days</span>
+                <Briefcase className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground flex-shrink-0" />
               </div>
-              <p className="text-3xl font-bold">{stats.workingCount}</p>
+              <p className="text-2xl sm:text-3xl font-bold">{stats.workingCount}</p>
             </div>
 
             {/* On Duty */}
-            <div className="p-4 rounded-2xl bg-card border shadow-sm">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-medium text-muted-foreground">On Duty</span>
-                <Shield className="h-4 w-4 text-muted-foreground" />
+            <div className="p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-card border shadow-sm min-w-0">
+              <div className="flex items-center justify-between mb-1.5 sm:mb-2 gap-1">
+                <span className="text-[11px] sm:text-xs font-medium text-muted-foreground truncate">On Duty</span>
+                <Shield className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground flex-shrink-0" />
               </div>
-              <p className="text-3xl font-bold">{stats.onDutyCount}</p>
+              <p className="text-2xl sm:text-3xl font-bold">{stats.onDutyCount}</p>
             </div>
 
             {/* Leave Days */}
-            <div className="p-4 rounded-2xl bg-card border shadow-sm">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-medium text-muted-foreground">Leave Days</span>
-                <Coffee className="h-4 w-4 text-muted-foreground" />
+            <div className="p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-card border shadow-sm min-w-0">
+              <div className="flex items-center justify-between mb-1.5 sm:mb-2 gap-1">
+                <span className="text-[11px] sm:text-xs font-medium text-muted-foreground truncate">Leave Days</span>
+                <Coffee className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground flex-shrink-0" />
               </div>
-              <p className="text-3xl font-bold">{stats.leaveCount}</p>
+              <p className="text-2xl sm:text-3xl font-bold">{stats.leaveCount}</p>
             </div>
 
             {/* Attendance Rate */}
-            <div className="p-4 rounded-2xl border shadow-sm bg-card">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-medium text-muted-foreground">Attendance</span>
-                <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            <div className="p-3 sm:p-4 rounded-xl sm:rounded-2xl border shadow-sm bg-card col-span-2 sm:col-span-1 min-w-0">
+              <div className="flex items-center justify-between mb-1.5 sm:mb-2 gap-1">
+                <span className="text-[11px] sm:text-xs font-medium text-muted-foreground truncate">Attendance</span>
+                <TrendingUp className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground flex-shrink-0" />
               </div>
-              <p className="text-3xl font-bold">
+              <p className="text-2xl sm:text-3xl font-bold">
                 {stats.attendanceRate}%
               </p>
             </div>
@@ -438,24 +438,24 @@ export default function EmployeeDashboardPage() {
           )}
 
           {/* Reports List */}
-          <div className="rounded-2xl border bg-card shadow-sm overflow-hidden">
-            <div className="p-4 border-b bg-muted/30 flex items-center justify-between">
-              <div>
+          <div className="rounded-xl sm:rounded-2xl border bg-card shadow-sm overflow-hidden">
+            <div className="p-3 sm:p-4 border-b bg-muted/30 flex items-center justify-between gap-3">
+              <div className="min-w-0">
                 <h3 className="font-semibold text-sm flex items-center gap-2">
-                  <FileText className="h-4 w-4 text-muted-foreground" />
-                  Work Report History
+                  <FileText className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                  <span className="truncate">Work Report History</span>
                 </h3>
-                <p className="text-xs text-muted-foreground mt-0.5">Your submitted work reports</p>
+                <p className="text-[11px] sm:text-xs text-muted-foreground mt-0.5 truncate">Your submitted work reports</p>
               </div>
               {reports.length > 0 && (
-                <span className="text-xs text-muted-foreground flex items-center gap-1.5">
+                <span className="text-[11px] sm:text-xs text-muted-foreground flex items-center gap-1.5 flex-shrink-0">
                   <Sparkles className="h-3.5 w-3.5" />
-                  {reports.length} reports
+                  {reports.length}<span className="hidden sm:inline"> reports</span>
                 </span>
               )}
             </div>
             
-            <div className="p-3">
+            <div className="p-2 sm:p-3">
               {loading ? (
                 <div className="flex items-center justify-center py-16">
                   <div className="flex flex-col items-center gap-3">
@@ -500,62 +500,60 @@ export default function EmployeeDashboardPage() {
                         {/* Accent bar - black and white theme */}
                         <div className="absolute top-0 left-0 w-full h-0.5 bg-foreground/10" />
                         
-                        <div className="flex items-center gap-3 px-4 py-3">
+                        <div className="flex items-start sm:items-center gap-2.5 sm:gap-3 px-3 sm:px-4 py-3">
                           {/* Date Block - black and white theme */}
-                          <div className="w-14 h-14 rounded-xl flex flex-col items-center justify-center flex-shrink-0 bg-foreground text-background">
-                            <span className="text-xs font-medium uppercase opacity-90">{getShortDay(report.date)}</span>
-                            <span className="text-xl font-bold leading-none">{getDayOfMonthIST(report.date)}</span>
+                          <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-lg sm:rounded-xl flex flex-col items-center justify-center flex-shrink-0 bg-foreground text-background">
+                            <span className="text-[10px] sm:text-xs font-medium uppercase opacity-90">{getShortDay(report.date)}</span>
+                            <span className="text-lg sm:text-xl font-bold leading-none">{getDayOfMonthIST(report.date)}</span>
                           </div>
                           
                           {/* Content */}
-                          <div className="flex items-center gap-3 flex-1 min-w-0">
-                            <div className="min-w-0 flex-1">
-                              <div className="flex items-center gap-2 mb-1">
-                                <span className="text-sm font-medium">{getShortDate(report.date)}</span>
-                                
-                                {/* Status badges */}
-                                <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium ${
-                                  report.status === 'working' 
-                                    ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' 
-                                    : 'bg-amber-500/10 text-amber-600 dark:text-amber-400'
-                                }`}>
-                                  {report.status === 'working' ? (
-                                    <><CheckCircle2 className="w-3 h-3" /> Working</>
-                                  ) : (
-                                    <><Coffee className="w-3 h-3" /> Leave</>
-                                  )}
-                                </span>
-                                
-                                {report.onDuty && (
-                                  <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium bg-blue-500/10 text-blue-600 dark:text-blue-400">
-                                    <Shield className="w-3 h-3" /> Duty
-                                  </span>
-                                )}
-                                
-                                {report.halfday && (
-                                  <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium bg-yellow-500/10 text-yellow-600 dark:text-yellow-400">
-                                    <Calendar className="w-3 h-3" /> Halfday
-                                  </span>
-                                )}
-                                
-                                {isLateSubmission(report) && (
-                                  <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium bg-red-500/10 text-red-600 dark:text-red-400">
-                                    <Clock className="w-3 h-3" /> Late
-                                  </span>
-                                )}
-                              </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mb-1">
+                              <span className="text-sm font-medium">{getShortDate(report.date)}</span>
                               
-                              {/* Preview */}
-                              {report.workReport && expandedReportId !== report.id && editingReport?.id !== report.id && (
-                                <p className="text-xs text-muted-foreground truncate">
-                                  {report.workReport.substring(0, 80)}{report.workReport.length > 80 ? '...' : ''}
-                                </p>
+                              {/* Status badges */}
+                              <span className={`inline-flex items-center gap-1 text-[11px] sm:text-xs px-1.5 sm:px-2 py-0.5 rounded-full font-medium ${
+                                report.status === 'working' 
+                                  ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' 
+                                  : 'bg-amber-500/10 text-amber-600 dark:text-amber-400'
+                              }`}>
+                                {report.status === 'working' ? (
+                                  <><CheckCircle2 className="w-3 h-3" /> Working</>
+                                ) : (
+                                  <><Coffee className="w-3 h-3" /> Leave</>
+                                )}
+                              </span>
+                              
+                              {report.onDuty && (
+                                <span className="inline-flex items-center gap-1 text-[11px] sm:text-xs px-1.5 sm:px-2 py-0.5 rounded-full font-medium bg-blue-500/10 text-blue-600 dark:text-blue-400">
+                                  <Shield className="w-3 h-3" /> Duty
+                                </span>
+                              )}
+                              
+                              {report.halfday && (
+                                <span className="inline-flex items-center gap-1 text-[11px] sm:text-xs px-1.5 sm:px-2 py-0.5 rounded-full font-medium bg-yellow-500/10 text-yellow-600 dark:text-yellow-400">
+                                  <Calendar className="w-3 h-3" /> Half
+                                </span>
+                              )}
+                              
+                              {isLateSubmission(report) && (
+                                <span className="inline-flex items-center gap-1 text-[11px] sm:text-xs px-1.5 sm:px-2 py-0.5 rounded-full font-medium bg-red-500/10 text-red-600 dark:text-red-400">
+                                  <Clock className="w-3 h-3" /> Late
+                                </span>
                               )}
                             </div>
+                            
+                            {/* Preview */}
+                            {report.workReport && expandedReportId !== report.id && editingReport?.id !== report.id && (
+                              <p className="text-[11px] sm:text-xs text-muted-foreground line-clamp-2 sm:line-clamp-1 break-words">
+                                {report.workReport}
+                              </p>
+                            )}
                           </div>
 
                           {/* Actions */}
-                          <div className="flex items-center gap-1.5 flex-shrink-0">
+                          <div className="flex items-center gap-1 sm:gap-1.5 flex-shrink-0">
                             {canEditReport(report) && (
                               <Button
                                 size="sm"
@@ -565,7 +563,7 @@ export default function EmployeeDashboardPage() {
                                   handleEditClick(report);
                                   setExpandedReportId(report.id);
                                 }}
-                                className="h-8 w-8 p-0"
+                                className="h-7 w-7 sm:h-8 sm:w-8 p-0"
                               >
                                 <Pencil className="h-3.5 w-3.5" />
                               </Button>
@@ -578,25 +576,25 @@ export default function EmployeeDashboardPage() {
 
                         {/* Expanded Content */}
                         {(expandedReportId === report.id || editingReport?.id === report.id) && (
-                          <div className="px-4 pb-4 pt-2 animate-fade-in">
-                            <div className="pl-[74px]">
-                              <div className="pl-4 border-l-2 border-border">
+                          <div className="px-3 sm:px-4 pb-4 pt-2 animate-fade-in">
+                            <div className="pl-[60px] sm:pl-[74px]">
+                              <div className="pl-3 sm:pl-4 border-l-2 border-border">
                                 {editingReport?.id === report.id ? (
-                                  <div className="space-y-4 py-2">
-                                    <div className="flex items-center justify-between">
-                                      <span className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                                        <CalendarDays className="h-4 w-4" />
-                                        {formatDate(report.date)}
+                                  <div className="space-y-3 sm:space-y-4 py-2">
+                                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                                      <span className="text-xs sm:text-sm font-medium text-muted-foreground flex items-center gap-2">
+                                        <CalendarDays className="h-4 w-4 flex-shrink-0" />
+                                        <span className="truncate">{formatDate(report.date)}</span>
                                       </span>
                                       <div className="flex items-center gap-2">
-                                        <Button size="sm" variant="ghost" onClick={handleCancelEdit} disabled={saving} className="h-8 px-3">
+                                        <Button size="sm" variant="ghost" onClick={handleCancelEdit} disabled={saving} className="h-8 px-3 flex-1 sm:flex-none">
                                           <X className="h-3.5 w-3.5 mr-1" /> Cancel
                                         </Button>
                                         <Button 
                                           size="sm" 
                                           onClick={handleSaveEdit} 
                                           disabled={saving}
-                                          className="h-8 px-4 bg-foreground text-background hover:bg-foreground/90"
+                                          className="h-8 px-4 bg-foreground text-background hover:bg-foreground/90 flex-1 sm:flex-none"
                                         >
                                           {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <><Check className="h-3.5 w-3.5 mr-1" /> Save</>}
                                         </Button>

@@ -320,15 +320,15 @@ export function WorkReportForm() {
   return (
     <div className="border rounded-xl overflow-hidden bg-card relative">
       {/* Header */}
-      <div className="p-5 border-b bg-muted/30">
-        <div className="flex items-center justify-between mb-3">
-          <div>
-            <h2 className="font-semibold">Daily Work Report</h2>
-            <p className="text-sm text-muted-foreground">
+      <div className="p-4 sm:p-5 border-b bg-muted/30">
+        <div className="flex items-center justify-between gap-3 mb-3">
+          <div className="min-w-0 flex-1">
+            <h2 className="font-semibold text-sm sm:text-base">Daily Work Report</h2>
+            <p className="text-xs sm:text-sm text-muted-foreground truncate">
               {session ? `Welcome, ${session.name}` : formattedDate}
             </p>
           </div>
-          <div className="relative">
+          <div className="relative flex-shrink-0">
             <button
               ref={calendarButtonRef}
               type="button"
@@ -371,7 +371,7 @@ export function WorkReportForm() {
         )}
       </div>
       
-      <form onSubmit={handleSubmit} className="p-5 space-y-5">
+      <form onSubmit={handleSubmit} className="p-4 sm:p-5 space-y-4 sm:space-y-5">
         {/* Employee ID Lookup */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
