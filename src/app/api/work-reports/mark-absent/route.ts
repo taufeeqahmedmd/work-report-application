@@ -64,13 +64,14 @@ export async function POST(request: NextRequest) {
     const existingReport = await getWorkReportByEmployeeAndDate(employeeId, date);
     
     if (existingReport) {
-      // Update existing report to leave status (absent is treated as leave)
+      // Preserve any work report text and onDuty/halfday flags so we don't
+      // wipe data the employee already submitted. Only flip the status.
       const updatedReport = await updateWorkReport(
         existingReport.id,
         'leave',
-        null, // Clear work report when marking as absent
-        false, // onDuty
-        false // halfday
+        existingReport.workReport ?? null,
+        existingReport.onDuty ?? false,
+        existingReport.halfday ?? false
       );
 
       return NextResponse.json<ApiResponse<WorkReport>>({

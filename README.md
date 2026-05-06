@@ -313,11 +313,11 @@ graph TD
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | `GET` | `/api/work-reports` | Get all work reports |
-| `POST` | `/api/work-reports` | Create work report |
-| `POST` | `/api/work-reports/submit` | Submit via queue |
-| `GET` | `/api/work-reports/[id]` | Get specific report |
-| `PUT` | `/api/work-reports/[id]` | Update report |
-| `DELETE` | `/api/work-reports/[id]` | Delete report |
+| `POST` | `/api/work-reports/submit` | Submit a work report (async pipeline) |
+| `GET` | `/api/work-reports/status` | Poll a queued submission |
+| `PUT` | `/api/work-reports/[id]` | Update a work report |
+| `POST` | `/api/work-reports/mark-present` | Manager mark employee present |
+| `POST` | `/api/work-reports/mark-absent` | Manager mark employee absent |
 
 </details>
 
@@ -331,7 +331,6 @@ graph TD
 | `GET` | `/api/admin/users/[id]` | Get user details |
 | `PUT` | `/api/admin/users/[id]` | Update user |
 | `DELETE` | `/api/admin/users/[id]` | Deactivate user |
-| `POST` | `/api/admin/bulk-upload` | CSV bulk upload |
 | `GET` | `/api/admin/users/[id]/departments` | Get manager departments |
 | `PUT` | `/api/admin/users/[id]/departments` | Update manager departments |
 

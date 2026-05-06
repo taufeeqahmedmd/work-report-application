@@ -6,12 +6,11 @@ import { usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { ThemeToggle } from '@/components/theme-toggle';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { 
   Loader2, Search, FileText, Briefcase, Coffee, ArrowRight, Lock, Pencil, X, Check, 
   ChevronDown, Filter, Users, Calendar, AlertCircle, Shield, LayoutGrid, List, UserCheck, RotateCcw,
-  TrendingUp, Clock, CheckCircle2, CalendarDays, Building2, Sparkles, Bell, CircleHelp, Settings, LogOut, Activity
+  TrendingUp, Clock, CheckCircle2, CalendarDays, Building2, Sparkles, Bell, CircleHelp, Settings,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import type { WorkReport, SessionUser, WorkStatus, EditPermissions, Department, Holiday } from '@/types';
@@ -613,47 +612,8 @@ export default function EmployeeReportsPage() {
   }
 
   return (
-    <div className="min-h-screen pt-16 pb-12 bg-background">
-      <div className="px-3 sm:px-4 md:px-6 py-4 max-w-full">
-        <div className={`${isTeamReportPage ? 'grid gap-4 lg:grid-cols-[220px_1fr]' : 'w-full'}`}>
-          {isTeamReportPage && (
-            <aside className="hidden lg:flex lg:flex-col rounded-md border border-primary/30 bg-primary text-primary-foreground overflow-hidden min-h-[calc(100vh-7.5rem)]">
-              <div className="px-5 py-4 border-b border-primary-foreground/10">
-                <h2 className="text-2xl font-semibold leading-none">Work Report</h2>
-                <p className="text-[11px] mt-1 uppercase tracking-[0.08em] text-primary-foreground/70">Enterprise Analytics</p>
-              </div>
-              <nav className="px-2 py-3 space-y-1">
-                <Link href="/employee-dashboard" className="flex items-center gap-3 rounded-sm px-3 py-2 text-xs font-semibold uppercase tracking-[0.06em] text-primary-foreground/80 hover:bg-primary-foreground/8 hover:text-primary-foreground">
-                  <Activity className="h-4 w-4" /> Dashboard
-                </Link>
-                <Link href="/team-report" className="flex items-center gap-3 rounded-sm bg-primary-foreground/8 px-3 py-2 text-xs font-semibold uppercase tracking-[0.06em]">
-                  <FileText className="h-4 w-4" /> Reports
-                </Link>
-                <Link href="/manage-team" className="flex items-center gap-3 rounded-sm px-3 py-2 text-xs font-semibold uppercase tracking-[0.06em] text-primary-foreground/80 hover:bg-primary-foreground/8 hover:text-primary-foreground">
-                  <Users className="h-4 w-4" /> Team Management
-                </Link>
-                <Link href="/management-dashboard" className="flex items-center gap-3 rounded-sm px-3 py-2 text-xs font-semibold uppercase tracking-[0.06em] text-primary-foreground/80 hover:bg-primary-foreground/8 hover:text-primary-foreground">
-                  <TrendingUp className="h-4 w-4" /> Analytics
-                </Link>
-                <Link href="/admin" className="flex items-center gap-3 rounded-sm px-3 py-2 text-xs font-semibold uppercase tracking-[0.06em] text-primary-foreground/80 hover:bg-primary-foreground/8 hover:text-primary-foreground">
-                  <Shield className="h-4 w-4" /> Admin Portal
-                </Link>
-              </nav>
-              <div className="mt-auto px-2 py-3 border-t border-primary-foreground/10 space-y-1">
-                <div className="mb-2 flex items-center justify-between rounded-sm border border-primary-foreground/20 px-3 py-2 text-xs uppercase tracking-[0.06em] text-primary-foreground/80">
-                  Theme
-                  <ThemeToggle />
-                </div>
-                <button className="w-full flex items-center gap-3 rounded-sm px-3 py-2 text-xs font-semibold uppercase tracking-[0.06em] text-primary-foreground/80 hover:bg-primary-foreground/8 hover:text-primary-foreground">
-                  <CircleHelp className="h-4 w-4" /> Support
-                </button>
-                <button className="w-full flex items-center gap-3 rounded-sm px-3 py-2 text-xs font-semibold uppercase tracking-[0.06em] text-primary-foreground/80 hover:bg-primary-foreground/8 hover:text-primary-foreground">
-                  <LogOut className="h-4 w-4" /> Sign Out
-                </button>
-              </div>
-            </aside>
-          )}
-
+    <div className="w-full">
+        <div className="w-full">
           <div className={`w-full ${session?.role === 'employee' ? 'grid gap-6 lg:grid-cols-[1fr_400px]' : ''}`}>
             <div className={session?.role === 'employee' ? '' : `${isManager && viewMode === 'scrum' ? 'max-w-[1600px]' : 'max-w-6xl'} mx-auto`}>
               {isTeamReportPage && (
@@ -1316,7 +1276,6 @@ export default function EmployeeReportsPage() {
           )}
         </div>
       </div>
-    </div>
     </div>
   );
 }

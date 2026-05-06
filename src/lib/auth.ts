@@ -201,11 +201,30 @@ export async function getSession(): Promise<SessionUser | null> {
 }
 
 /**
- * Clear session cookie (logout)
+ * Clear session cookie (logout). Mirror the path/domain/secure attributes used
+ * by `setSessionCookie` so the browser actually unsets the cookie that was set.
+ * Calling `cookieStore.delete(name)` only matches the default attributes, which
+ * means cookies issued with a custom `domain` (e.g. behind a reverse proxy)
+ * would otherwise stick around after logout.
  */
 export async function clearSession(): Promise<void> {
   const cookieStore = await cookies();
-  cookieStore.delete(SESSION_COOKIE_NAME);
+
+  const isProduction = process.env.NODE_ENV === 'production';
+  const hasHttpsUrl = process.env.NEXT_PUBLIC_APP_URL?.startsWith('https://');
+  const isSecure = isProduction || hasHttpsUrl;
+  const sameSite = isProduction && isSecure ? 'none' : 'lax';
+  const cookieDomain = process.env.COOKIE_DOMAIN || undefined;
+
+  cookieStore.set(SESSION_COOKIE_NAME, '', {
+    httpOnly: true,
+    secure: isSecure,
+    sameSite,
+    expires: new Date(0),
+    maxAge: 0,
+    path: '/',
+    ...(cookieDomain && cookieDomain !== 'localhost' ? { domain: cookieDomain } : {}),
+  });
 }
 
 /**

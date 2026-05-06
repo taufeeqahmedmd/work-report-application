@@ -4,10 +4,10 @@ import { useState, useMemo, memo, useCallback } from 'react';
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { WorkReport, Holiday } from '@/types';
-import { 
-  getISTNow, 
-  getISTTodayDateString, 
-  formatDateToIST
+import {
+  getISTNow,
+  getISTTodayDateString,
+  isISTSunday,
 } from '@/lib/date';
 
 interface WorkReportCalendarProps {
@@ -44,12 +44,9 @@ function WorkReportCalendarComponent({ reports, holidays = [], onDateClick }: Wo
   // Create a set of holiday dates for quick lookup
   const holidaysSet = useMemo(() => new Set(holidays.map(h => h.date)), [holidays]);
 
-  // Helper function to check if a date is Sunday
-  const isSunday = useCallback((dateStr: string): boolean => {
-    const [year, month, day] = dateStr.split('-').map(Number);
-    const date = new Date(year, month - 1, day);
-    return date.getDay() === 0; // 0 = Sunday
-  }, []);
+  // Helper function to check if a date is Sunday in IST. Centralised so the
+  // result is consistent on servers/browsers running outside Asia/Kolkata.
+  const isSunday = useCallback((dateStr: string): boolean => isISTSunday(dateStr), []);
 
   // Get first day of month and number of days
   const firstDayOfMonth = new Date(currentYear, currentMonth, 1).getDay();
@@ -178,36 +175,47 @@ function WorkReportCalendarComponent({ reports, holidays = [], onDateClick }: Wo
     return `${dateStr} - ${statusLabels[status] || 'Unknown'}`;
   }, [holidaysMap, getDateStatus]);
 
+  // Build a YYYY-MM-DD string directly from numeric calendar fields. This
+  // avoids round-tripping through `new Date(...)` which would resolve in the
+  // host timezone and could shift the rendered date in non-IST locales.
+  const buildDateStr = useCallback((year: number, monthIdx: number, day: number): string => {
+    // Normalise overflow: monthIdx=-1 means December of (year-1); monthIdx=12 means January of (year+1)
+    let y = year;
+    let m = monthIdx;
+    while (m < 0) {
+      y -= 1;
+      m += 12;
+    }
+    while (m > 11) {
+      y += 1;
+      m -= 12;
+    }
+    const mm = String(m + 1).padStart(2, '0');
+    const dd = String(day).padStart(2, '0');
+    return `${y}-${mm}-${dd}`;
+  }, []);
+
   // Generate calendar days
   const calendarDays = useMemo(() => {
     const days: Array<{ dateStr: string; day: number; isCurrentMonth: boolean }> = [];
 
-    // Previous month's trailing days
     for (let i = firstDayOfMonth - 1; i >= 0; i--) {
       const day = daysInPrevMonth - i;
-      const date = new Date(currentYear, currentMonth - 1, day);
-      const dateStr = formatDateToIST(date);
-      days.push({ dateStr, day, isCurrentMonth: false });
+      days.push({ dateStr: buildDateStr(currentYear, currentMonth - 1, day), day, isCurrentMonth: false });
     }
 
-    // Current month's days
     for (let day = 1; day <= daysInMonth; day++) {
-      const date = new Date(currentYear, currentMonth, day);
-      const dateStr = formatDateToIST(date);
-      days.push({ dateStr, day, isCurrentMonth: true });
+      days.push({ dateStr: buildDateStr(currentYear, currentMonth, day), day, isCurrentMonth: true });
     }
 
-    // Next month's leading days (to fill the grid)
     const totalCells = days.length;
-    const remainingCells = 42 - totalCells; // 6 rows * 7 days
+    const remainingCells = 42 - totalCells;
     for (let day = 1; day <= remainingCells; day++) {
-      const date = new Date(currentYear, currentMonth + 1, day);
-      const dateStr = formatDateToIST(date);
-      days.push({ dateStr, day, isCurrentMonth: false });
+      days.push({ dateStr: buildDateStr(currentYear, currentMonth + 1, day), day, isCurrentMonth: false });
     }
 
     return days;
-  }, [currentYear, currentMonth, firstDayOfMonth, daysInMonth, daysInPrevMonth]);
+  }, [currentYear, currentMonth, firstDayOfMonth, daysInMonth, daysInPrevMonth, buildDateStr]);
 
   const monthNames = [
     'January', 'February', 'March', 'April', 'May', 'June',

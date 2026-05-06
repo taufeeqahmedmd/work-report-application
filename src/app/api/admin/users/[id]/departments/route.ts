@@ -26,6 +26,15 @@ export async function GET(
       );
     }
 
+    // Admin-only endpoint — without this guard, any authenticated user can
+    // enumerate other users' department mappings (IDOR).
+    if (session.role !== 'admin' && session.role !== 'superadmin') {
+      return NextResponse.json<ApiResponse>(
+        { success: false, error: 'Forbidden' },
+        { status: 403 }
+      );
+    }
+
     const { id } = await context.params;
     const userId = parseInt(id);
 

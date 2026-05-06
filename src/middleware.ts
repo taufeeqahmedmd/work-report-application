@@ -3,6 +3,7 @@ import type { NextRequest } from 'next/server';
 import { jwtVerify } from 'jose';
 import { logger } from '@/lib/logger';
 import type { PageAccess, UserRole } from '@/types';
+import { DEFAULT_PAGE_ACCESS } from '@/types';
 
 // Routes that require authentication
 const protectedRoutes = [
@@ -19,70 +20,6 @@ const protectedRoutes = [
   // '/work-report' - removed from protected routes to allow unauthenticated access
   '/profile',
 ];
-
-// Default page access by role (duplicated here since middleware can't import from @/types at edge runtime)
-const DEFAULT_PAGE_ACCESS: Record<UserRole, PageAccess> = {
-  employee: {
-    dashboard: true,
-    submit_report: true,
-    employee_reports: false,
-    management_dashboard: false,
-    admin_dashboard: false,
-    super_admin_dashboard: false,
-    mark_attendance: false,
-    mark_holidays: false,
-  },
-  manager: {
-    dashboard: true,
-    submit_report: true,
-    employee_reports: true,
-    management_dashboard: true,
-    admin_dashboard: false,
-    super_admin_dashboard: false,
-    mark_attendance: true,
-    mark_holidays: true,
-  },
-  teamhead: {
-    dashboard: true,
-    submit_report: true,
-    employee_reports: true,
-    management_dashboard: true,
-    admin_dashboard: false,
-    super_admin_dashboard: false,
-    mark_attendance: true,
-    mark_holidays: true,
-  },
-  boardmember: {
-    dashboard: true,
-    submit_report: false,
-    employee_reports: true,
-    management_dashboard: true,
-    admin_dashboard: false,
-    super_admin_dashboard: false,
-    mark_attendance: false,
-    mark_holidays: false,
-  },
-  admin: {
-    dashboard: true,
-    submit_report: true,
-    employee_reports: false,
-    management_dashboard: false,
-    admin_dashboard: true,
-    super_admin_dashboard: false,
-    mark_attendance: false,
-    mark_holidays: true,
-  },
-  superadmin: {
-    dashboard: true,
-    submit_report: true,
-    employee_reports: true,
-    management_dashboard: true,
-    admin_dashboard: true,
-    super_admin_dashboard: true,
-    mark_attendance: false,
-    mark_holidays: true,
-  },
-};
 
 // Map routes to page access keys
 const ROUTE_TO_PAGE_ACCESS: Record<string, keyof PageAccess> = {
@@ -134,7 +71,11 @@ function hasRouteAccess(pathname: string, pageAccess: PageAccess): boolean {
   if (pathname.startsWith('/profile')) {
     return true;
   }
-  return true; // Default to allowing access for unmapped routes
+  // Default to DENY for any new protected route that wasn't explicitly registered
+  // above. This is the safer default — adding a new authenticated page should
+  // require an explicit ROUTE_TO_PAGE_ACCESS entry (or update to /profile-style
+  // exception) before users can reach it.
+  return false;
 }
 
 export async function middleware(request: NextRequest) {

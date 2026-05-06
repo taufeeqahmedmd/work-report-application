@@ -7,7 +7,7 @@ import {
 } from '@/lib/db/queries';
 import type { ApiResponse, Department, CreateDepartmentInput } from '@/types';
 
-// GET: Get all departments
+// GET: Get all departments (admin only — exposes the full org list)
 export async function GET() {
   try {
     const session = await getSession();
@@ -16,6 +16,13 @@ export async function GET() {
       return NextResponse.json<ApiResponse>(
         { success: false, error: 'Unauthorized' },
         { status: 401 }
+      );
+    }
+
+    if (session.role !== 'admin' && session.role !== 'superadmin') {
+      return NextResponse.json<ApiResponse>(
+        { success: false, error: 'Forbidden' },
+        { status: 403 }
       );
     }
 

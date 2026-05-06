@@ -119,6 +119,19 @@ export async function POST(request: NextRequest) {
       ? usersInDepartment.filter(user => requestedEmployeeIds.includes(user.employeeId))
       : usersInDepartment;
 
+    if (assignees.length === 0) {
+      return NextResponse.json<ApiResponse>(
+        {
+          success: false,
+          error:
+            assignmentMode === 'individual'
+              ? 'Select at least one valid assignee from your team'
+              : 'Selected department has no active team members to assign',
+        },
+        { status: 400 }
+      );
+    }
+
     if (startsOn && endsOn && startsOn > endsOn) {
       return NextResponse.json<ApiResponse>({ success: false, error: 'Start date cannot be after end date' }, { status: 400 });
     }

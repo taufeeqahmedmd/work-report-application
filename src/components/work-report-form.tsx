@@ -183,6 +183,7 @@ export function WorkReportForm() {
           if (attempts >= maxAttempts) {
             toast.warning('Processing is taking longer than expected.');
             setSubmitted(true);
+            setSubmitting(false);
             return;
           }
           
@@ -195,6 +196,7 @@ export function WorkReportForm() {
             if (statusData.success && statusData.data) {
               if (statusData.data.status === 'completed') {
                 setSubmitted(true);
+                setSubmitting(false);
                 toast.success('Report submitted successfully!');
                 return;
               } else if (statusData.data.status === 'failed') {
@@ -207,6 +209,7 @@ export function WorkReportForm() {
             setTimeout(pollStatus, 1000);
           } catch {
             setSubmitted(true);
+            setSubmitting(false);
             toast.success('Report submitted!');
           }
         };
@@ -235,6 +238,7 @@ export function WorkReportForm() {
     setHalfday(false);
     setSelectedDate(today);
     setSubmitted(false);
+    setSubmitting(false);
     
     // Re-trigger lookup if user is logged in
     if (session) {

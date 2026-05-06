@@ -1,17 +1,15 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Loader2, Plus, Building2, GitBranch, Users, Search, Trash2, UserX, UserCheck, FolderTree, X, Pencil, Key, Settings, Shield, Upload, Download, FileJson, FileSpreadsheet, Check, Bell, CircleHelp, Activity, FileText } from 'lucide-react';
+import { Loader2, Plus, Building2, GitBranch, Users, Search, Trash2, UserX, UserCheck, FolderTree, X, Pencil, Key, Settings, Shield, Upload, Download, FileJson, FileSpreadsheet, Check, Bell, CircleHelp } from 'lucide-react';
 import { toast } from 'sonner';
 import type { SafeEmployee, Entity, Branch, Department, EditPermissions, PageAccess } from '@/types';
 import { DEFAULT_PAGE_ACCESS } from '@/types';
-import { ThemeToggle } from '@/components/theme-toggle';
 
 export default function SuperAdminPage() {
   const [loading, setLoading] = useState(true);
@@ -223,13 +221,21 @@ export default function SuperAdminPage() {
 
   const handleCreateDepartment = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!departmentName.trim()) {
+      toast.error('Department name is required');
+      return;
+    }
+    if (!selectedDeptEntityId) {
+      toast.error('Please select an entity for the department');
+      return;
+    }
     setCreatingDepartment(true);
 
     try {
       const response = await fetch('/api/admin/departments', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: departmentName, entityId: selectedDeptEntityId || null }),
+        body: JSON.stringify({ name: departmentName.trim(), entityId: selectedDeptEntityId }),
       });
 
       const data = await response.json();
@@ -1032,40 +1038,8 @@ export default function SuperAdminPage() {
   }
 
   return (
-    <div className="min-h-screen pt-16 bg-background overflow-x-hidden">
-      <div className="px-3 sm:px-4 md:px-6 py-4">
-      <div className="grid gap-4 lg:grid-cols-[220px_1fr]">
-        <aside className="hidden lg:flex lg:flex-col rounded-md border border-primary/30 bg-primary text-primary-foreground overflow-hidden min-h-[calc(100vh-7.5rem)]">
-          <div className="px-5 py-4 border-b border-primary-foreground/10">
-            <h2 className="text-2xl font-semibold leading-none">Work Report</h2>
-            <p className="text-[11px] mt-1 uppercase tracking-[0.08em] text-primary-foreground/70">Enterprise Analytics</p>
-          </div>
-          <nav className="px-2 py-3 space-y-1">
-            <Link href="/employee-dashboard" className="flex items-center gap-3 rounded-sm px-3 py-2 text-xs font-semibold uppercase tracking-[0.06em] text-primary-foreground/80 hover:bg-primary-foreground/8 hover:text-primary-foreground">
-              <Activity className="h-4 w-4" /> Dashboard
-            </Link>
-            <Link href="/employee-reports" className="flex items-center gap-3 rounded-sm px-3 py-2 text-xs font-semibold uppercase tracking-[0.06em] text-primary-foreground/80 hover:bg-primary-foreground/8 hover:text-primary-foreground">
-              <FileText className="h-4 w-4" /> Reports
-            </Link>
-            <Link href="/manage-team" className="flex items-center gap-3 rounded-sm px-3 py-2 text-xs font-semibold uppercase tracking-[0.06em] text-primary-foreground/80 hover:bg-primary-foreground/8 hover:text-primary-foreground">
-              <Users className="h-4 w-4" /> Team Management
-            </Link>
-            <Link href="/management-dashboard" className="flex items-center gap-3 rounded-sm px-3 py-2 text-xs font-semibold uppercase tracking-[0.06em] text-primary-foreground/80 hover:bg-primary-foreground/8 hover:text-primary-foreground">
-              <Activity className="h-4 w-4" /> Analytics
-            </Link>
-            <Link href="/super-admin" className="flex items-center gap-3 rounded-sm bg-primary-foreground/8 px-3 py-2 text-xs font-semibold uppercase tracking-[0.06em]">
-              <Shield className="h-4 w-4" /> Admin Portal
-            </Link>
-          </nav>
-          <div className="mt-auto px-3 py-3 border-t border-primary-foreground/10">
-            <div className="flex items-center justify-between rounded-sm border border-primary-foreground/20 px-3 py-2 text-xs uppercase tracking-[0.06em] text-primary-foreground/80">
-              Theme
-              <ThemeToggle />
-            </div>
-          </div>
-        </aside>
-
-      <main className="max-w-7xl mx-auto w-full">
+    <>
+    <main className="max-w-7xl mx-auto w-full">
         <div className="rounded-md border bg-card px-4 py-3 mb-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-4">
@@ -1518,7 +1492,10 @@ export default function SuperAdminPage() {
                   required
                   className="max-w-xs"
                 />
-                <Button type="submit" disabled={creatingDepartment}>
+                <Button
+                  type="submit"
+                  disabled={creatingDepartment || !selectedDeptEntityId || !departmentName.trim()}
+                >
                   {creatingDepartment ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Create'}
                 </Button>
                 <Button type="button" variant="outline" onClick={() => setShowDepartmentForm(false)}>
@@ -2648,8 +2625,6 @@ export default function SuperAdminPage() {
           </div>
         )}
         </main>
-      </div>
-      </div>
 
       {/* Confirmation Dialog */}
       <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
@@ -2680,6 +2655,6 @@ export default function SuperAdminPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </>
   );
 }

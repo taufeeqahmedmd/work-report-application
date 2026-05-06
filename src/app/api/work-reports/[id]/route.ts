@@ -9,64 +9,10 @@ type RouteContext = {
   params: Promise<{ id: string }>;
 };
 
-// GET: Get a single work report by ID
-export async function GET(
-  request: NextRequest,
-  context: RouteContext
-) {
-  try {
-    const session = await getSession();
-    if (!session) {
-      return NextResponse.json<ApiResponse>(
-        { success: false, error: 'Authentication required' },
-        { status: 401 }
-      );
-    }
-
-    const { id } = await context.params;
-    const reportId = parseInt(id);
-
-    if (isNaN(reportId)) {
-      return NextResponse.json<ApiResponse>(
-        { success: false, error: 'Invalid report ID' },
-        { status: 400 }
-      );
-    }
-
-    const report = await getWorkReportById(reportId);
-
-    if (!report) {
-      return NextResponse.json<ApiResponse>(
-        { success: false, error: 'Report not found' },
-        { status: 404 }
-      );
-    }
-
-    // Check access: employees can only view their own, managers can view their department
-    const canViewAll = session.role === 'admin' || session.role === 'superadmin';
-    const isManager = session.role === 'manager' || session.role === 'teamhead';
-    const isOwnReport = report.employeeId === session.employeeId;
-    const isSameDepartment = report.department === session.department;
-
-    if (!canViewAll && !isOwnReport && !(isManager && isSameDepartment)) {
-      return NextResponse.json<ApiResponse>(
-        { success: false, error: 'Access denied' },
-        { status: 403 }
-      );
-    }
-
-    return NextResponse.json<ApiResponse<WorkReport>>({
-      success: true,
-      data: report,
-    });
-  } catch (error) {
-    logger.error('Get work report error:', error);
-    return NextResponse.json<ApiResponse>(
-      { success: false, error: 'Failed to fetch work report' },
-      { status: 500 }
-    );
-  }
-}
+// NOTE: A GET handler used to live here to fetch a single work report by id,
+// but no UI consumer ever called it (lists pull through GET /api/work-reports
+// or the manager/employee report endpoints). It was removed to keep the
+// surface small. Re-add only when there is a concrete caller that needs it.
 
 // PUT: Update a work report
 export async function PUT(

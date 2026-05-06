@@ -1,11 +1,9 @@
 'use client';
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { ThemeToggle } from '@/components/theme-toggle';
 import { 
   Loader2, 
   FileText, 
@@ -25,21 +23,15 @@ import {
   Clock,
   CheckCircle2,
   CalendarDays,
-  ArrowRight,
-  Lock,
   Sparkles,
   Mail,
   RotateCcw,
-  LayoutDashboard,
   Bell,
   Settings,
-  LifeBuoy,
-  LogOut
 } from 'lucide-react';
 import { toast } from 'sonner';
 import Link from 'next/link';
 import type { WorkReport, SessionUser, WorkStatus, EditPermissions, Holiday } from '@/types';
-import { DEFAULT_PAGE_ACCESS } from '@/types';
 import { getISTTodayDateString, getISTYear, getShortDayIST, getShortDateIST, formatDateForDisplay, getDayOfMonthIST, convertUTCToISTDate } from '@/lib/date';
 import { logger } from '@/lib/logger';
 import { WorkReportCalendar } from '@/components/work-report-calendar';
@@ -61,7 +53,6 @@ export default function EmployeeDashboardPage() {
     department: string;
     isCompleted: boolean;
   }>>([]);
-  const pathname = usePathname();
 
   // Edit state
   const [editingReport, setEditingReport] = useState<WorkReport | null>(null);
@@ -71,14 +62,13 @@ export default function EmployeeDashboardPage() {
 
   // Expanded report state
   const [expandedReportId, setExpandedReportId] = useState<number | null>(null);
+  // Default the inline list to "this month so far" using IST so users in any
+  // timezone see the same month boundaries as the rest of the app.
   const [dateRange, setDateRange] = useState<{ start: string; end: string }>(() => {
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const day = String(now.getDate()).padStart(2, '0');
+    const today = getISTTodayDateString();
     return {
-      start: `${year}-${month}-01`,
-      end: `${year}-${month}-${day}`,
+      start: `${today.slice(0, 7)}-01`,
+      end: today,
     };
   });
 
@@ -274,6 +264,10 @@ export default function EmployeeDashboardPage() {
         body: JSON.stringify({
           status: editStatus,
           workReport: editWorkReport.trim() || null,
+          // The inline editor doesn't expose onDuty/halfday — pass through the
+          // existing values so the API doesn't reset them to false.
+          onDuty: editingReport.onDuty,
+          halfday: editingReport.halfday,
         }),
       });
 
@@ -298,15 +292,6 @@ export default function EmployeeDashboardPage() {
     }
   }, [editingReport, editStatus, editWorkReport, handleCancelEdit]);
 
-  const handleLogout = useCallback(async () => {
-    try {
-      await fetch('/api/auth/logout', { method: 'POST' });
-      window.location.href = '/';
-    } catch {
-      toast.error('Failed to logout');
-    }
-  }, []);
-
   const formatDate = useCallback((dateStr: string) => formatDateForDisplay(dateStr), []);
   const getShortDay = useCallback((dateStr: string) => getShortDayIST(dateStr), []);
   const getShortDate = useCallback((dateStr: string) => getShortDateIST(dateStr), []);
@@ -326,38 +311,20 @@ export default function EmployeeDashboardPage() {
   }, [reports]);
   
   // Check if today's report is submitted (using IST)
-  const today = useMemo(() => getISTTodayDateString(), []);
+  // Re-evaluate every minute so the day rolls over without a manual refresh.
+  const [today, setToday] = useState<string>(() => getISTTodayDateString());
+  useEffect(() => {
+    const tick = () => setToday(getISTTodayDateString());
+    tick();
+    const interval = setInterval(tick, 60_000);
+    return () => clearInterval(interval);
+  }, []);
   const todayReport = useMemo(() => {
     const fromCalendar = calendarReports.find((r) => r.date === today);
     if (fromCalendar) return fromCalendar;
     return reports.find((r) => r.date === today);
   }, [calendarReports, reports, today]);
-  const pageAccess = session?.pageAccess ?? (session ? DEFAULT_PAGE_ACCESS[session.role] : null);
 
-  const sidebarLinks = useMemo(() => {
-    if (!session || !pageAccess) return [];
-
-    const isManagerLike = session.role === 'manager' || session.role === 'teamhead';
-    const links: Array<{ href: string; label: string; icon: React.ComponentType<{ className?: string }> }> = [];
-
-    if (pageAccess.dashboard) links.push({ href: '/employee-dashboard', label: 'Dashboard', icon: LayoutDashboard });
-    if (pageAccess.submit_report) links.push({ href: '/work-report', label: 'Submit Report', icon: FileText });
-    if (pageAccess.employee_reports) {
-      links.push({
-        href: isManagerLike ? '/team-report' : '/employee-reports',
-        label: isManagerLike ? 'Team Reports' : 'Reports',
-        icon: TrendingUp,
-      });
-    }
-    if (isManagerLike) links.push({ href: '/manage-team', label: 'Team Management', icon: User });
-    if (pageAccess.management_dashboard) links.push({ href: '/management-dashboard', label: 'Analytics', icon: CalendarDays });
-    if (pageAccess.admin_dashboard) links.push({ href: '/admin', label: 'Admin Portal', icon: Shield });
-    if (pageAccess.super_admin_dashboard) links.push({ href: '/super-admin', label: 'Super Admin', icon: Shield });
-
-    links.push({ href: '/profile', label: 'Profile', icon: User });
-    return links;
-  }, [session, pageAccess]);
-  
   // Helper function to check if report is a late submission
   const isLateSubmission = useCallback((report: WorkReport) => {
     try {
@@ -374,85 +341,19 @@ export default function EmployeeDashboardPage() {
     }
   }, []);
 
-  // Loading state
-  if (sessionLoading) {
+  // Page-level session is still loading or AppShell already enforces login.
+  // Render nothing until our own session fetch resolves so we don't try to render
+  // session.name before it's available.
+  if (sessionLoading || !session) {
     return (
-      <div className="min-h-screen pt-16 flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <div className="relative w-16 h-16">
-            <div className="absolute inset-0 rounded-full border-4 border-muted" />
-            <div className="absolute inset-0 rounded-full border-4 border-t-primary animate-spin" />
-          </div>
-          <p className="text-sm text-muted-foreground animate-pulse">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Not logged in
-  if (!session) {
-    return (
-      <div className="min-h-screen pt-16 flex items-center justify-center p-4">
-        <div className="max-w-md w-full text-center">
-          <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-muted to-muted/50 flex items-center justify-center mx-auto mb-6">
-            <Lock className="h-10 w-10 text-muted-foreground" />
-          </div>
-          <h1 className="text-2xl font-bold mb-2">Login Required</h1>
-          <p className="text-muted-foreground mb-6">Please login to access your dashboard.</p>
-          <Button onClick={() => window.location.href = '/login'} className="btn-shine">
-            Go to Login <ArrowRight className="ml-2 h-4 w-4" />
-          </Button>
-        </div>
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
       </div>
     );
   }
 
   return (
-    <div className="h-screen pt-16 bg-background overflow-hidden">
-      <div className="h-full px-3 sm:px-4 md:px-6 py-4">
-        <div className="grid gap-4 lg:grid-cols-[220px_1fr]">
-          <aside className="hidden lg:flex lg:flex-col rounded-md border border-primary/30 bg-primary text-primary-foreground overflow-hidden min-h-[calc(100vh-7.5rem)]">
-            <div className="px-5 py-4 border-b border-primary-foreground/10">
-              <h2 className="text-2xl font-semibold leading-none">Work Report</h2>
-              <p className="text-[11px] mt-1 uppercase tracking-[0.08em] text-primary-foreground/70">Enterprise Analytics</p>
-            </div>
-            <nav className="px-2 py-3 space-y-1">
-              {sidebarLinks.map((link) => {
-                const Icon = link.icon;
-                const isActive = link.href === '/employee-dashboard'
-                  ? pathname === '/employee-dashboard'
-                  : pathname.startsWith(link.href);
-
-                return (
-                  <Link
-                    key={link.href}
-                    href={link.href}
-                    className={`flex items-center gap-3 rounded-sm px-3 py-2 text-xs font-semibold uppercase tracking-[0.06em] ${
-                      isActive
-                        ? 'bg-primary-foreground/8 text-primary-foreground'
-                        : 'text-primary-foreground/80 hover:bg-primary-foreground/8 hover:text-primary-foreground'
-                    }`}
-                  >
-                    <Icon className="h-4 w-4" /> {link.label}
-                  </Link>
-                );
-              })}
-            </nav>
-            <div className="mt-auto px-2 py-3 border-t border-primary-foreground/10 space-y-1">
-              <div className="mb-2 flex items-center justify-between rounded-sm border border-primary-foreground/20 px-3 py-2 text-xs uppercase tracking-[0.06em] text-primary-foreground/80">
-                Theme
-                <ThemeToggle />
-              </div>
-              <button className="w-full flex items-center gap-3 rounded-sm px-3 py-2 text-xs font-semibold uppercase tracking-[0.06em] text-primary-foreground/80 hover:bg-primary-foreground/8 hover:text-primary-foreground">
-                <LifeBuoy className="h-4 w-4" /> Support
-              </button>
-              <button onClick={handleLogout} className="w-full flex items-center gap-3 rounded-sm px-3 py-2 text-xs font-semibold uppercase tracking-[0.06em] text-primary-foreground/80 hover:bg-primary-foreground/8 hover:text-primary-foreground">
-                <LogOut className="h-4 w-4" /> Sign Out
-              </button>
-            </div>
-          </aside>
-
-          <section className="space-y-4 h-full overflow-y-auto pr-1">
+    <section className="space-y-4">
             <div className="rounded-md border border-border bg-card">
               <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
                 <div>
@@ -904,9 +805,6 @@ export default function EmployeeDashboardPage() {
               />
             </div>
           </div>
-          </section>
-        </div>
-      </div>
-    </div>
+    </section>
   );
 }

@@ -1,14 +1,14 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { ThemeToggle } from '@/components/theme-toggle';
 import { toast } from 'sonner';
 import type { Department, SafeEmployee, SessionUser } from '@/types';
-import { Search, Bell, CircleHelp, Settings, Activity, FileText, Users, TrendingUp, Shield, UserPlus, Download, Upload } from 'lucide-react';
+import { Search, UserPlus } from 'lucide-react';
+import { canMarkAttendance } from '@/lib/permissions';
+import { getISTTodayDateString } from '@/lib/date';
 
 type TeamCheckpoint = {
   id: number;
@@ -57,11 +57,30 @@ export default function ManageTeamPage() {
   });
   const [selectedEmployeeIds, setSelectedEmployeeIds] = useState<string[]>([]);
   const [assignmentSelection, setAssignmentSelection] = useState<Record<number, string[]>>({});
+  const [rosterSearch, setRosterSearch] = useState('');
+  const [rosterDepartmentFilter, setRosterDepartmentFilter] = useState<string>('all');
 
   const teamUsersForSelectedDepartment = useMemo(
     () => users.filter(u => u.department === newCheckpoint.department && u.status === 'active'),
     [users, newCheckpoint.department]
   );
+
+  const filteredUsers = useMemo(() => {
+    const query = rosterSearch.trim().toLowerCase();
+    return users.filter(u => {
+      if (rosterDepartmentFilter !== 'all' && u.department !== rosterDepartmentFilter) {
+        return false;
+      }
+      if (!query) return true;
+      return (
+        u.name.toLowerCase().includes(query) ||
+        u.email.toLowerCase().includes(query) ||
+        u.employeeId.toLowerCase().includes(query)
+      );
+    });
+  }, [users, rosterSearch, rosterDepartmentFilter]);
+
+  const canMarkAbsent = canMarkAttendance(session);
 
   const fetchData = async () => {
     setLoading(true);
@@ -142,7 +161,7 @@ export default function ManageTeamPage() {
   };
 
   const handleMarkAbsent = async (employeeId: string) => {
-    const today = new Date().toISOString().split('T')[0];
+    const today = getISTTodayDateString();
     try {
       const response = await fetch('/api/work-reports/mark-absent', {
         method: 'POST',
@@ -164,6 +183,14 @@ export default function ManageTeamPage() {
     e.preventDefault();
     if (!newCheckpoint.title || !newCheckpoint.department) {
       toast.error('Checkpoint title and department are required');
+      return;
+    }
+    if (newCheckpoint.assignmentMode === 'individual' && selectedEmployeeIds.length === 0) {
+      toast.error('Select at least one assignee for an individual checkpoint');
+      return;
+    }
+    if (newCheckpoint.assignmentMode === 'team' && teamUsersForSelectedDepartment.length === 0) {
+      toast.error('Selected department has no active team members to assign');
       return;
     }
 
@@ -237,42 +264,19 @@ export default function ManageTeamPage() {
   }
 
   return (
-    <div className="min-h-screen pt-16 bg-background overflow-x-hidden">
-      <div className="px-3 sm:px-4 md:px-6 py-4">
-        <div className="grid gap-4 lg:grid-cols-[220px_1fr]">
-          <aside className="hidden lg:flex lg:flex-col rounded-md border border-primary/30 bg-primary text-primary-foreground overflow-hidden min-h-[calc(100vh-7.5rem)]">
-            <div className="px-5 py-4 border-b border-primary-foreground/10">
-              <h2 className="text-2xl font-semibold leading-none">WORK REPORT</h2>
-              <p className="text-[11px] mt-1 tracking-[0.08em] text-primary-foreground/70">Enterprise Analytics</p>
-            </div>
-            <nav className="px-2 py-3 space-y-1">
-              <Link href="/employee-dashboard" className="flex items-center gap-3 rounded-sm px-3 py-2 text-xs font-semibold uppercase tracking-[0.06em] text-primary-foreground/80 hover:bg-primary-foreground/8 hover:text-primary-foreground"><Activity className="h-4 w-4" /> Dashboard</Link>
-              <Link href="/team-report" className="flex items-center gap-3 rounded-sm px-3 py-2 text-xs font-semibold uppercase tracking-[0.06em] text-primary-foreground/80 hover:bg-primary-foreground/8 hover:text-primary-foreground"><FileText className="h-4 w-4" /> Reports</Link>
-              <Link href="/manage-team" className="flex items-center gap-3 rounded-sm bg-primary-foreground/8 px-3 py-2 text-xs font-semibold uppercase tracking-[0.06em]"><Users className="h-4 w-4" /> Team Management</Link>
-              <Link href="/management-dashboard" className="flex items-center gap-3 rounded-sm px-3 py-2 text-xs font-semibold uppercase tracking-[0.06em] text-primary-foreground/80 hover:bg-primary-foreground/8 hover:text-primary-foreground"><TrendingUp className="h-4 w-4" /> Analytics</Link>
-              <Link href="/admin" className="flex items-center gap-3 rounded-sm px-3 py-2 text-xs font-semibold uppercase tracking-[0.06em] text-primary-foreground/80 hover:bg-primary-foreground/8 hover:text-primary-foreground"><Shield className="h-4 w-4" /> Admin Portal</Link>
-            </nav>
-            <div className="mt-auto px-3 py-3 border-t border-primary-foreground/10">
-              <div className="flex items-center justify-between rounded-sm border border-primary-foreground/20 px-3 py-2 text-xs uppercase tracking-[0.06em] text-primary-foreground/80">
-                Theme
-                <ThemeToggle />
-              </div>
-            </div>
-          </aside>
-
-          <main className="space-y-4">
+    <main className="space-y-4">
             <div className="rounded-md border bg-card px-4 py-3">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="flex-1 min-w-[250px]">
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input placeholder="Quick search..." className="pl-9 h-9 bg-muted/30 border-0" />
+                    <Input
+                      placeholder="Search roster by name, email or ID..."
+                      className="pl-9 h-9 bg-muted/30 border-0"
+                      value={rosterSearch}
+                      onChange={(e) => setRosterSearch(e.target.value)}
+                    />
                   </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <button className="inline-flex h-8 w-8 items-center justify-center rounded-sm border text-muted-foreground"><Bell className="h-4 w-4" /></button>
-                  <button className="inline-flex h-8 w-8 items-center justify-center rounded-sm border text-muted-foreground"><CircleHelp className="h-4 w-4" /></button>
-                  <button className="inline-flex h-8 w-8 items-center justify-center rounded-sm border text-muted-foreground"><Settings className="h-4 w-4" /></button>
                 </div>
               </div>
             </div>
@@ -282,10 +286,6 @@ export default function ManageTeamPage() {
                 <div>
                   <h1 className="text-2xl font-semibold tracking-[-0.01em]">Manage Team</h1>
                   <p className="text-sm text-muted-foreground">Configure organization structure and monitoring protocols.</p>
-                </div>
-                <div className="flex gap-2">
-                  <Button variant="outline" className="rounded-sm"><Download className="h-4 w-4 mr-2" />Export Roster</Button>
-                  <Button className="rounded-sm bg-primary text-primary-foreground"><Upload className="h-4 w-4 mr-2" />Bulk Import</Button>
                 </div>
               </div>
 
@@ -313,18 +313,26 @@ export default function ManageTeamPage() {
                   <h2 className="text-sm font-semibold">Active Roster</h2>
                   <div className="flex items-center gap-2 text-xs">
                     <span className="text-muted-foreground">Filter by:</span>
-                    <select className="h-8 rounded-sm border bg-background px-2">
-                      <option>All Teams</option>
-                      {departments.map(dep => <option key={`f-${dep.id}`}>{dep.name}</option>)}
+                    <select
+                      className="h-8 rounded-sm border bg-background px-2"
+                      value={rosterDepartmentFilter}
+                      onChange={(e) => setRosterDepartmentFilter(e.target.value)}
+                    >
+                      <option value="all">All Teams</option>
+                      {departments.map(dep => (
+                        <option key={`f-${dep.id}`} value={dep.name}>{dep.name}</option>
+                      ))}
                     </select>
                   </div>
                 </div>
                 <div className="p-3">
                   {users.length === 0 ? (
                     <p className="text-sm text-muted-foreground">No team users found.</p>
+                  ) : filteredUsers.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">No users match the current filters.</p>
                   ) : (
                     <div className="space-y-2">
-                      {users.map(user => (
+                      {filteredUsers.map(user => (
                         <div key={user.id} className="grid grid-cols-[1.4fr_0.8fr_1fr_auto] items-center gap-3 rounded-sm border p-2">
                           <div>
                             <p className="font-medium">{user.name}</p>
@@ -339,7 +347,9 @@ export default function ManageTeamPage() {
                             <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${user.status === 'active' ? 'bg-emerald-500/15 text-emerald-700' : 'bg-muted text-muted-foreground'}`}>
                               {user.status}
                             </span>
-                            <Button variant="outline" size="sm" className="rounded-sm" onClick={() => handleMarkAbsent(user.employeeId)}>Absent</Button>
+                            {canMarkAbsent && (
+                              <Button variant="outline" size="sm" className="rounded-sm" onClick={() => handleMarkAbsent(user.employeeId)}>Absent</Button>
+                            )}
                             <Button size="sm" className="rounded-sm" variant={user.status === 'active' ? 'destructive' : 'default'} onClick={() => handleToggleUser(user.id, user.status)}>
                               {user.status === 'active' ? 'Deactivate' : 'Activate'}
                             </Button>
@@ -352,8 +362,18 @@ export default function ManageTeamPage() {
               </section>
 
               <section className="rounded-md border bg-card overflow-hidden">
-                <div className="px-3 py-2 border-b text-sm font-semibold">Checkpoints</div>
+                <div className="px-3 py-2 border-b text-sm font-semibold flex items-center justify-between">
+                  <span>Recent Checkpoints</span>
+                  {checkpoints.length > 3 && (
+                    <span className="text-[10px] font-normal text-muted-foreground uppercase tracking-[0.06em]">
+                      Showing 3 of {checkpoints.length}
+                    </span>
+                  )}
+                </div>
                 <div className="p-3 space-y-3">
+                  {checkpoints.length === 0 && (
+                    <p className="text-xs text-muted-foreground">No checkpoints yet.</p>
+                  )}
                   {checkpoints.slice(0, 3).map(checkpoint => (
                     <div key={checkpoint.id} className="rounded-sm border p-2">
                       <div className="flex items-center justify-between">
@@ -453,9 +473,6 @@ export default function ManageTeamPage() {
                 ))}
               </section>
             )}
-          </main>
-        </div>
-      </div>
-    </div>
+    </main>
   );
 }

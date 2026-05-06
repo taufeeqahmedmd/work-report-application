@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth';
 import { pool } from '@/lib/db/database';
-import { getISTNow, formatDateToIST } from '@/lib/date';
+import { getISTTodayDateString, shiftISTDate } from '@/lib/date';
 import { logger } from '@/lib/logger';
 import type { ApiResponse } from '@/types';
 
@@ -49,13 +49,22 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // Org-wide analytics - restrict to admin/superadmin/boardmember roles.
+    if (
+      session.role !== 'admin' &&
+      session.role !== 'superadmin' &&
+      session.role !== 'boardmember'
+    ) {
+      return NextResponse.json<ApiResponse>(
+        { success: false, error: 'Forbidden' },
+        { status: 403 }
+      );
+    }
+
     const url = new URL(request.url);
     const days = parseInt(url.searchParams.get('days') || '30');
-    // Use IST for date calculations
-    const istNow = getISTNow();
-    const startDate = new Date(istNow);
-    startDate.setDate(startDate.getDate() - days);
-    const startDateStr = formatDateToIST(startDate);
+    // Use IST helpers so the start cutoff is correct regardless of host TZ.
+    const startDateStr = shiftISTDate(getISTTodayDateString(), -days);
 
     // Get summary stats
     const summaryResult = await pool.query(`

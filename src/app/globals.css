@@ -157,12 +157,6 @@
 
 /* Animation Utilities */
 @layer utilities {
-  /* Enforce fixed viewport-height screens application-wide */
-  .min-h-screen {
-    min-height: 100vh;
-    height: 100vh;
-  }
-
   /* Fade animations */
   .animate-fade-in {
     animation: fadeIn 0.5s ease-out forwards;
@@ -439,6 +433,26 @@
 .dark .role-employee {
   background: #404040;
   color: #e5e5e5;
+}
+
+.role-teamhead {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.dark .role-teamhead {
+  background: #b91c1c;
+  color: #fee2e2;
+}
+
+.role-boardmember {
+  background: #ccfbf1;
+  color: #0f766e;
+}
+
+.dark .role-boardmember {
+  background: #0f766e;
+  color: #ccfbf1;
 }
 
 /* Interactive card */

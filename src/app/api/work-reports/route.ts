@@ -1,13 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { logger } from '@/lib/logger';
 import {
-  createWorkReport,
   getWorkReports,
   getWorkReportsByEmployee,
   getWorkReportsByDateRange,
   getWorkReportsByDateRangeAndDepartments,
   getWorkReportsByEmployeeAndDateRange,
-  getWorkReportByEmployeeAndDate,
   getWorkReportCount,
   searchWorkReports,
   getWorkReportsByDepartment,
@@ -19,7 +17,7 @@ import {
   getAllDepartments
 } from '@/lib/db/queries';
 import { getSession } from '@/lib/auth';
-import type { ApiResponse, WorkReport, CreateWorkReportInput } from '@/types';
+import type { ApiResponse, WorkReport } from '@/types';
 
 // GET: Fetch work reports with optional filters
 export async function GET(request: NextRequest) {
@@ -159,7 +157,12 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    const totalCount = canViewAll ? await getWorkReportCount() : reports.length;
+    // For managers/teamheads the global getWorkReportCount() leaks counts from
+    // departments they don't manage. Use the filtered result length so the UI
+    // total matches what they're actually allowed to see. Admins/superadmins
+    // still get the global total since they can view everything.
+    const isAdminLevel = session.role === 'admin' || session.role === 'superadmin';
+    const totalCount = isAdminLevel ? await getWorkReportCount() : reports.length;
 
     return NextResponse.json<ApiResponse<{ reports: WorkReport[]; total: number }>>({
       success: true,
@@ -193,81 +196,8 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST: Submit a new work report
-export async function POST(request: NextRequest) {
-  try {
-    const body: CreateWorkReportInput = await request.json();
-    const { employeeId, date, name, email, department, status, workReport } = body;
-
-    // Validate required fields
-    if (!employeeId || !date || !name || !email || !department || !status) {
-      return NextResponse.json<ApiResponse>(
-        { success: false, error: 'Missing required fields' },
-        { status: 400 }
-      );
-    }
-
-    // Validate status
-    if (status !== 'working' && status !== 'leave') {
-      return NextResponse.json<ApiResponse>(
-        { success: false, error: 'Invalid status. Must be "working" or "leave"' },
-        { status: 400 }
-      );
-    }
-
-    // If working, work report is mandatory
-    if (status === 'working' && (!workReport || workReport.trim() === '')) {
-      return NextResponse.json<ApiResponse>(
-        { success: false, error: 'Work report is required when status is "working"' },
-        { status: 400 }
-      );
-    }
-
-    // Check for duplicate report (same employee, same date)
-    const existingReport = await getWorkReportByEmployeeAndDate(employeeId, date);
-    if (existingReport) {
-      return NextResponse.json<ApiResponse>(
-        { success: false, error: 'A work report already exists for this employee on this date' },
-        { status: 409 }
-      );
-    }
-
-    // Create the work report
-    const newReport = await createWorkReport({
-      employeeId,
-      date,
-      name,
-      email,
-      department,
-      status,
-      workReport: workReport || null,
-    });
-
-    return NextResponse.json<ApiResponse<WorkReport>>({
-      success: true,
-      data: newReport,
-      message: 'Work report submitted successfully',
-    }, { status: 201 });
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    const isConnectionError =
-      errorMessage.includes('ECONNREFUSED') ||
-      errorMessage.includes('ETIMEDOUT') ||
-      errorMessage.includes('Connection terminated') ||
-      errorMessage.includes('connection timeout') ||
-      errorMessage.includes('ENOTFOUND');
-
-    logger.error('Submit work report error:', errorMessage);
-    console.error('[API] Work report submit error:', error);
-
-    return NextResponse.json<ApiResponse>(
-      {
-        success: false,
-        error: isConnectionError
-          ? 'Database connection error. Please try again in a few moments.'
-          : 'Failed to submit work report'
-      },
-      { status: 500 }
-    );
-  }
-}
+// NOTE: The previous synchronous POST /api/work-reports handler was removed.
+// Work-report submission goes through the async pipeline at
+// POST /api/work-reports/submit which handles validation, deduplication, and
+// onDuty/halfday flags consistently. Keep this file as a GET-only listing
+// endpoint to avoid drift between two parallel submission paths.

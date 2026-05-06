@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getEmployeeLookup, getSafeEmployeeByEmployeeId, getWorkReportByEmployeeAndDate } from '@/lib/db/queries';
 import { getISTTodayDateString } from '@/lib/date';
+import { getSession } from '@/lib/auth';
 import type { ApiResponse, EmployeeLookup, SafeEmployee } from '@/types';
 
 type RouteContext = {
@@ -26,6 +27,16 @@ export async function GET(
     const fullData = url.searchParams.get('full') === 'true';
 
     if (fullData) {
+      // Full employee data exposes role, status, pageAccess, etc. and must be
+      // restricted to admins/superadmins.
+      const session = await getSession();
+      if (!session || (session.role !== 'admin' && session.role !== 'superadmin')) {
+        return NextResponse.json<ApiResponse>(
+          { success: false, error: 'Forbidden' },
+          { status: 403 }
+        );
+      }
+
       // Return full employee data (without password)
       const employee = await getSafeEmployeeByEmployeeId(employeeId);
       

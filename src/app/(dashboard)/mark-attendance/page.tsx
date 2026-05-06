@@ -217,8 +217,8 @@ export default function MarkAttendancePage() {
   }
 
   return (
-    <div className="min-h-screen pt-16 bg-gradient-to-br from-background via-background to-muted/20">
-      <div className="container py-8 px-4 md:px-6">
+    <div>
+      <div>
         <div className="max-w-7xl mx-auto space-y-6">
           {/* Header */}
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">

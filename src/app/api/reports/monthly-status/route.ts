@@ -7,7 +7,8 @@ import {
   getAllEntities,
   getAllBranches,
   getAllDepartments,
-  getHolidays
+  getHolidays,
+  getManagerDepartmentIds,
 } from '@/lib/db/queries';
 import type { ApiResponse, Entity, Branch, Department, SafeEmployee, WorkReport } from '@/types';
 
@@ -79,13 +80,54 @@ export async function GET(request: NextRequest) {
     const startDate = formatDateString(year, month, 1);
     const endDate = formatDateString(year, month, daysInMonth);
 
+    // Managers/teamheads must be scoped to their assigned departments so
+    // they can't see the full org. Admins/superadmins/boardmembers see all.
+    const isManagerLike = session.role === 'manager' || session.role === 'teamhead';
+    let managerDepartmentNames: string[] | null = null;
+    if (isManagerLike) {
+      const managerDeptIds = await getManagerDepartmentIds(session.id);
+      const allDepts = await getAllDepartments();
+      managerDepartmentNames = allDepts
+        .filter((d) => managerDeptIds.includes(d.id))
+        .map((d) => d.name);
+      // No assigned departments → return empty result.
+      if (managerDepartmentNames.length === 0) {
+        return NextResponse.json<ApiResponse<MonthlyStatusResponse>>({
+          success: true,
+          data: {
+            employees: [],
+            daysInMonth,
+            year,
+            month,
+            entities: [],
+            branches: [],
+            departments: [],
+            holidays: [],
+          },
+        });
+      }
+      // Reject explicit department filters that fall outside the manager's scope.
+      if (department && department !== 'all' && !managerDepartmentNames.includes(department)) {
+        return NextResponse.json<ApiResponse>(
+          { success: false, error: 'You do not manage that department' },
+          { status: 403 }
+        );
+      }
+    }
+
     // Get employees with filters applied at database level (much faster)
-    const employees: SafeEmployee[] = await getEmployeesWithFilters({
+    let employees: SafeEmployee[] = await getEmployeesWithFilters({
       status: 'active',
       entityId: entityId && entityId !== 'all' ? parseInt(entityId) : null,
       branchId: branchId && branchId !== 'all' ? parseInt(branchId) : null,
       department: department && department !== 'all' ? department : null,
     });
+
+    // For managers/teamheads, restrict the employee set to their departments.
+    if (managerDepartmentNames) {
+      const allowed = new Set(managerDepartmentNames);
+      employees = employees.filter((e) => allowed.has(e.department));
+    }
 
     // Get all work reports for the month
     const workReports: WorkReport[] = await getWorkReportsByDateRange(startDate, endDate);
@@ -161,10 +203,23 @@ export async function GET(request: NextRequest) {
       return a.name.localeCompare(b.name);
     });
 
-    // Get filter options
-    const entities = await getAllEntities();
-    const branches = await getAllBranches();
-    const departments = await getAllDepartments();
+    // Get filter options. For managers, only expose their assigned departments
+    // (and the entities/branches their employees actually belong to).
+    let entities = await getAllEntities();
+    let branches = await getAllBranches();
+    let departments = await getAllDepartments();
+    if (managerDepartmentNames) {
+      const allowed = new Set(managerDepartmentNames);
+      departments = departments.filter((d) => allowed.has(d.name));
+      const visibleEntityIds = new Set(
+        employees.map((e) => e.entityId).filter((id): id is number => id != null)
+      );
+      const visibleBranchIds = new Set(
+        employees.map((e) => e.branchId).filter((id): id is number => id != null)
+      );
+      entities = entities.filter((e) => visibleEntityIds.has(e.id));
+      branches = branches.filter((b) => visibleBranchIds.has(b.id));
+    }
 
     // Add caching headers - but keep it short for real-time updates
     const response = NextResponse.json<ApiResponse<MonthlyStatusResponse>>({

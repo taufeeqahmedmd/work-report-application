@@ -64,13 +64,14 @@ export async function POST(request: NextRequest) {
     const existingReport = await getWorkReportByEmployeeAndDate(employeeId, date);
     
     if (existingReport) {
-      // Update existing report to working status
+      // Preserve any work report text and onDuty/halfday flags the employee
+      // (or another manager) may have already submitted. Only flip the status.
       const updatedReport = await updateWorkReport(
         existingReport.id,
         'working',
-        null, // No work report required when Operations/Manager marks as present
-        false, // onDuty
-        false // halfday
+        existingReport.workReport ?? null,
+        existingReport.onDuty ?? false,
+        existingReport.halfday ?? false
       );
 
       return NextResponse.json<ApiResponse<WorkReport>>({

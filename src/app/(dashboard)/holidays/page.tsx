@@ -241,8 +241,8 @@ export default function HolidaysPage() {
   }
 
   return (
-    <div className="min-h-screen pt-16 pb-12 bg-gradient-to-b from-background via-background to-muted/20">
-      <div className="container px-4 md:px-6 py-8 max-w-full">
+    <div className="pb-12">
+      <div className="max-w-full">
         <div className="w-full max-w-7xl mx-auto">
           
           {/* Header */}
