@@ -5,10 +5,14 @@ export interface TeamCheckpointRow {
   title: string;
   description: string | null;
   department: string;
+  isActive: boolean;
   recurrenceType: 'one_time' | 'daily' | 'weekly' | 'monthly';
   startsOn: string | null;
   endsOn: string | null;
   dueDate: string | null;
+  startsAt: string | null;
+  endsAt: string | null;
+  dueAt: string | null;
   createdBy: number | null;
   createdAt: string;
 }
@@ -30,6 +34,7 @@ export async function ensureCheckpointTables(): Promise<void> {
       title VARCHAR(255) NOT NULL,
       description TEXT,
       department VARCHAR(255) NOT NULL,
+      is_active BOOLEAN NOT NULL DEFAULT TRUE,
       recurrence_type VARCHAR(20) NOT NULL DEFAULT 'one_time',
       starts_on DATE,
       ends_on DATE,
@@ -39,10 +44,14 @@ export async function ensureCheckpointTables(): Promise<void> {
     );
   `);
 
+  await pool.query(`ALTER TABLE team_checkpoints ADD COLUMN IF NOT EXISTS is_active BOOLEAN NOT NULL DEFAULT TRUE`);
   await pool.query(`ALTER TABLE team_checkpoints ADD COLUMN IF NOT EXISTS recurrence_type VARCHAR(20) NOT NULL DEFAULT 'one_time'`);
   await pool.query(`ALTER TABLE team_checkpoints ADD COLUMN IF NOT EXISTS starts_on DATE`);
   await pool.query(`ALTER TABLE team_checkpoints ADD COLUMN IF NOT EXISTS ends_on DATE`);
   await pool.query(`ALTER TABLE team_checkpoints ADD COLUMN IF NOT EXISTS due_date DATE`);
+  await pool.query(`ALTER TABLE team_checkpoints ADD COLUMN IF NOT EXISTS starts_at TIMESTAMP`);
+  await pool.query(`ALTER TABLE team_checkpoints ADD COLUMN IF NOT EXISTS ends_at TIMESTAMP`);
+  await pool.query(`ALTER TABLE team_checkpoints ADD COLUMN IF NOT EXISTS due_at TIMESTAMP`);
 
   await pool.query(`
     CREATE TABLE IF NOT EXISTS employee_checkpoints (

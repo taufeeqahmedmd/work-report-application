@@ -14,6 +14,7 @@ const protectedRoutes = [
   '/employee-reports',
   '/team-report',
   '/manage-team',
+  '/checkpoints',
   '/employee-dashboard',
   '/holidays',
   '/mark-attendance',
@@ -28,6 +29,7 @@ const ROUTE_TO_PAGE_ACCESS: Record<string, keyof PageAccess> = {
   '/employee-reports': 'employee_reports',
   '/team-report': 'employee_reports',
   '/manage-team': 'employee_reports',
+  '/checkpoints': 'employee_reports',
   '/management-dashboard': 'management_dashboard',
   '/managers-dashboard': 'management_dashboard', // Uses same permission as management dashboard
   '/admin': 'admin_dashboard',

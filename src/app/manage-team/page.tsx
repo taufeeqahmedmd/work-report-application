@@ -3,38 +3,16 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import type { Department, SafeEmployee, SessionUser } from '@/types';
 import { Search, UserPlus } from 'lucide-react';
 import { canMarkAttendance } from '@/lib/permissions';
 import { getISTTodayDateString } from '@/lib/date';
 
-type TeamCheckpoint = {
-  id: number;
-  title: string;
-  description: string | null;
-  department: string;
-  recurrenceType: 'one_time' | 'daily' | 'weekly' | 'monthly';
-  startsOn: string | null;
-  endsOn: string | null;
-  dueDate: string | null;
-  assigneeCount: number;
-  completedCount: number;
-  createdAt: string;
-  assignments: Array<{
-    assignmentId: number;
-    employeeId: string;
-    name: string | null;
-    isCompleted: boolean;
-  }>;
-};
-
 export default function ManageTeamPage() {
   const [session, setSession] = useState<SessionUser | null>(null);
   const [users, setUsers] = useState<SafeEmployee[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
-  const [checkpoints, setCheckpoints] = useState<TeamCheckpoint[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [newUser, setNewUser] = useState({
@@ -44,26 +22,8 @@ export default function ManageTeamPage() {
     password: '',
     department: '',
   });
-
-  const [newCheckpoint, setNewCheckpoint] = useState({
-    title: '',
-    description: '',
-    department: '',
-    assignmentMode: 'team' as 'team' | 'individual',
-    recurrenceType: 'one_time' as 'one_time' | 'daily' | 'weekly' | 'monthly',
-    startsOn: '',
-    endsOn: '',
-    dueDate: '',
-  });
-  const [selectedEmployeeIds, setSelectedEmployeeIds] = useState<string[]>([]);
-  const [assignmentSelection, setAssignmentSelection] = useState<Record<number, string[]>>({});
   const [rosterSearch, setRosterSearch] = useState('');
   const [rosterDepartmentFilter, setRosterDepartmentFilter] = useState<string>('all');
-
-  const teamUsersForSelectedDepartment = useMemo(
-    () => users.filter(u => u.department === newCheckpoint.department && u.status === 'active'),
-    [users, newCheckpoint.department]
-  );
 
   const filteredUsers = useMemo(() => {
     const query = rosterSearch.trim().toLowerCase();
@@ -85,24 +45,21 @@ export default function ManageTeamPage() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [sessionRes, usersRes, departmentsRes, checkpointsRes] = await Promise.all([
+      const [sessionRes, usersRes, departmentsRes] = await Promise.all([
         fetch('/api/auth/session'),
         fetch('/api/manage-team/users'),
         fetch('/api/managers/departments'),
-        fetch('/api/manage-team/checkpoints'),
       ]);
 
-      const [sessionData, usersData, departmentsData, checkpointsData] = await Promise.all([
+      const [sessionData, usersData, departmentsData] = await Promise.all([
         sessionRes.json(),
         usersRes.json(),
         departmentsRes.json(),
-        checkpointsRes.json(),
       ]);
 
       if (sessionData.success) setSession(sessionData.data);
       if (usersData.success) setUsers(usersData.data || []);
       if (departmentsData.success) setDepartments(departmentsData.data || []);
-      if (checkpointsData.success) setCheckpoints(checkpointsData.data?.checkpoints || []);
     } catch {
       toast.error('Failed to load manage team data');
     } finally {
@@ -176,82 +133,6 @@ export default function ManageTeamPage() {
       toast.success('Marked absent for today');
     } catch {
       toast.error('Failed to mark absent');
-    }
-  };
-
-  const handleCreateCheckpoint = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newCheckpoint.title || !newCheckpoint.department) {
-      toast.error('Checkpoint title and department are required');
-      return;
-    }
-    if (newCheckpoint.assignmentMode === 'individual' && selectedEmployeeIds.length === 0) {
-      toast.error('Select at least one assignee for an individual checkpoint');
-      return;
-    }
-    if (newCheckpoint.assignmentMode === 'team' && teamUsersForSelectedDepartment.length === 0) {
-      toast.error('Selected department has no active team members to assign');
-      return;
-    }
-
-    try {
-      const response = await fetch('/api/manage-team/checkpoints', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...newCheckpoint,
-          employeeIds: selectedEmployeeIds,
-        }),
-      });
-      const data = await response.json();
-      if (!data.success) {
-        toast.error(data.error || 'Failed to create checkpoint');
-        return;
-      }
-      toast.success(data.message || 'Checkpoint created');
-      setNewCheckpoint({
-        title: '',
-        description: '',
-        department: '',
-        assignmentMode: 'team',
-        recurrenceType: 'one_time',
-        startsOn: '',
-        endsOn: '',
-        dueDate: '',
-      });
-      setSelectedEmployeeIds([]);
-      await fetchData();
-    } catch {
-      toast.error('Failed to create checkpoint');
-    }
-  };
-
-  const handleCheckpointAssignmentUpdate = async (
-    checkpointId: number,
-    action: 'assign' | 'remove'
-  ) => {
-    const employeeIds = assignmentSelection[checkpointId] || [];
-    if (employeeIds.length === 0) {
-      toast.error('Select at least one user');
-      return;
-    }
-
-    try {
-      const response = await fetch('/api/manage-team/checkpoints', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action, checkpointId, employeeIds }),
-      });
-      const data = await response.json();
-      if (!data.success) {
-        toast.error(data.error || 'Failed to update assignments');
-        return;
-      }
-      toast.success(data.message || 'Assignments updated');
-      setAssignmentSelection(prev => ({ ...prev, [checkpointId]: [] }));
-      await fetchData();
-    } catch {
-      toast.error('Failed to update assignments');
     }
   };
 
@@ -360,119 +241,7 @@ export default function ManageTeamPage() {
                   )}
                 </div>
               </section>
-
-              <section className="rounded-md border bg-card overflow-hidden">
-                <div className="px-3 py-2 border-b text-sm font-semibold flex items-center justify-between">
-                  <span>Recent Checkpoints</span>
-                  {checkpoints.length > 3 && (
-                    <span className="text-[10px] font-normal text-muted-foreground uppercase tracking-[0.06em]">
-                      Showing 3 of {checkpoints.length}
-                    </span>
-                  )}
-                </div>
-                <div className="p-3 space-y-3">
-                  {checkpoints.length === 0 && (
-                    <p className="text-xs text-muted-foreground">No checkpoints yet.</p>
-                  )}
-                  {checkpoints.slice(0, 3).map(checkpoint => (
-                    <div key={checkpoint.id} className="rounded-sm border p-2">
-                      <div className="flex items-center justify-between">
-                        <p className="font-medium">{checkpoint.title}</p>
-                        <span className="text-[10px] px-1.5 py-0.5 rounded-sm bg-muted uppercase">{checkpoint.recurrenceType}</span>
-                      </div>
-                      <p className="text-xs text-muted-foreground mt-1">{checkpoint.department} - {checkpoint.assigneeCount} assigned</p>
-                    </div>
-                  ))}
-
-                  <div className="pt-2 border-t space-y-2">
-                    <p className="text-xs uppercase tracking-[0.06em] text-muted-foreground font-semibold">Checkpoint Configuration</p>
-                    <form className="space-y-2" onSubmit={handleCreateCheckpoint}>
-                      <div>
-                        <Label className="text-[11px] uppercase tracking-[0.06em]">Checkpoint Title</Label>
-                        <Input value={newCheckpoint.title} onChange={(e) => setNewCheckpoint(prev => ({ ...prev, title: e.target.value }))} placeholder="e.g Incident Review" className="rounded-sm" />
-                      </div>
-                      <div>
-                        <Label className="text-[11px] uppercase tracking-[0.06em]">Assignment Scope</Label>
-                        <select className="h-10 w-full rounded-sm border bg-background px-3 text-sm" value={newCheckpoint.assignmentMode} onChange={(e) => setNewCheckpoint(prev => ({ ...prev, assignmentMode: e.target.value as 'team' | 'individual' }))}>
-                          <option value="team">Full Organization</option>
-                          <option value="individual">Individual</option>
-                        </select>
-                      </div>
-                      <div>
-                        <Label className="text-[11px] uppercase tracking-[0.06em]">Department</Label>
-                        <select className="h-10 w-full rounded-sm border bg-background px-3 text-sm" value={newCheckpoint.department} onChange={(e) => setNewCheckpoint(prev => ({ ...prev, department: e.target.value }))}>
-                          <option value="">Select department</option>
-                          {departments.map(dep => <option key={`cp-${dep.id}`} value={dep.name}>{dep.name}</option>)}
-                        </select>
-                      </div>
-                      <div>
-                        <Label className="text-[11px] uppercase tracking-[0.06em]">Repeat Type</Label>
-                        <select className="h-10 w-full rounded-sm border bg-background px-3 text-sm" value={newCheckpoint.recurrenceType} onChange={(e) => setNewCheckpoint(prev => ({ ...prev, recurrenceType: e.target.value as 'one_time' | 'daily' | 'weekly' | 'monthly' }))}>
-                          <option value="one_time">Fixed</option>
-                          <option value="daily">Recurring - Daily</option>
-                          <option value="weekly">Recurring - Weekly</option>
-                          <option value="monthly">Recurring - Monthly</option>
-                        </select>
-                      </div>
-                      {newCheckpoint.assignmentMode === 'individual' && (
-                        <div className="rounded-sm border p-2">
-                          <Label className="text-[11px] uppercase tracking-[0.06em]">Assign Users</Label>
-                          <div className="mt-2 grid grid-cols-1 gap-1 max-h-36 overflow-auto">
-                            {teamUsersForSelectedDepartment.map(user => (
-                              <label key={user.employeeId} className="flex items-center gap-2 text-xs">
-                                <input
-                                  type="checkbox"
-                                  checked={selectedEmployeeIds.includes(user.employeeId)}
-                                  onChange={(e) => {
-                                    if (e.target.checked) setSelectedEmployeeIds(prev => [...prev, user.employeeId]);
-                                    else setSelectedEmployeeIds(prev => prev.filter(id => id !== user.employeeId));
-                                  }}
-                                />
-                                <span>{user.name} ({user.employeeId})</span>
-                              </label>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                      <Button type="submit" className="w-full rounded-sm bg-primary text-primary-foreground">Create Checkpoint</Button>
-                    </form>
-                  </div>
-                </div>
-              </section>
             </div>
-
-            {checkpoints.length > 0 && (
-              <section className="rounded-md border bg-card p-3 space-y-3">
-                <h3 className="text-sm font-semibold">Checkpoint Assignment Manager</h3>
-                {checkpoints.map(checkpoint => (
-                  <div key={`assign-${checkpoint.id}`} className="rounded-sm border p-3">
-                    <p className="font-medium">{checkpoint.title}</p>
-                    <p className="text-xs text-muted-foreground mb-2">{checkpoint.department} - {checkpoint.completedCount}/{checkpoint.assigneeCount} completed</p>
-                    <div className="grid gap-2 md:grid-cols-[1fr_auto_auto]">
-                      <select
-                        multiple
-                        className="min-h-20 rounded-sm border bg-background px-2 py-1 text-sm"
-                        value={assignmentSelection[checkpoint.id] || []}
-                        onChange={(e) => {
-                          const values = Array.from(e.target.selectedOptions).map(option => option.value);
-                          setAssignmentSelection(prev => ({ ...prev, [checkpoint.id]: values }));
-                        }}
-                      >
-                        {users
-                          .filter(user => user.department === checkpoint.department && user.status === 'active')
-                          .map(user => (
-                            <option key={`${checkpoint.id}-${user.employeeId}`} value={user.employeeId}>
-                              {user.name} ({user.employeeId})
-                            </option>
-                          ))}
-                      </select>
-                      <Button variant="outline" className="rounded-sm" onClick={() => handleCheckpointAssignmentUpdate(checkpoint.id, 'assign')}>Add to user</Button>
-                      <Button variant="destructive" className="rounded-sm" onClick={() => handleCheckpointAssignmentUpdate(checkpoint.id, 'remove')}>Remove from user</Button>
-                    </div>
-                  </div>
-                ))}
-              </section>
-            )}
     </main>
   );
 }

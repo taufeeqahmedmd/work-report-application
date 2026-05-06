@@ -31,10 +31,14 @@ export async function GET() {
         tc.title,
         tc.description,
         tc.department,
+        tc.is_active AS "isActive",
         tc.recurrence_type AS "recurrenceType",
         tc.starts_on::text AS "startsOn",
         tc.ends_on::text AS "endsOn",
         tc.due_date::text AS "dueDate",
+        tc.starts_at::text AS "startsAt",
+        tc.ends_at::text AS "endsAt",
+        tc.due_at::text AS "dueAt",
         tc.created_at AS "createdAt",
         COUNT(ec.id)::int AS "assigneeCount",
         COUNT(CASE WHEN ec.is_completed THEN 1 END)::int AS "completedCount",
@@ -88,6 +92,9 @@ export async function POST(request: NextRequest) {
       startsOn?: string;
       endsOn?: string;
       dueDate?: string;
+      startsAt?: string;
+      endsAt?: string;
+      dueAt?: string;
     };
 
     const title = body.title?.trim();
@@ -101,6 +108,9 @@ export async function POST(request: NextRequest) {
     const startsOn = body.startsOn?.trim() || null;
     const endsOn = body.endsOn?.trim() || null;
     const dueDate = body.dueDate?.trim() || null;
+    const startsAt = body.startsAt?.trim() || null;
+    const endsAt = body.endsAt?.trim() || null;
+    const dueAt = body.dueAt?.trim() || null;
 
     if (!title || !department) {
       return NextResponse.json<ApiResponse>({ success: false, error: 'Title and department are required' }, { status: 400 });
@@ -132,17 +142,36 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (startsOn && endsOn && startsOn > endsOn) {
-      return NextResponse.json<ApiResponse>({ success: false, error: 'Start date cannot be after end date' }, { status: 400 });
+    const scheduleStart = startsAt ?? startsOn;
+    const scheduleEnd = endsAt ?? endsOn;
+    if (scheduleStart && scheduleEnd && scheduleStart > scheduleEnd) {
+      return NextResponse.json<ApiResponse>({ success: false, error: 'Start cannot be after end' }, { status: 400 });
     }
 
     const checkpointResult = await pool.query(
       `
-      INSERT INTO team_checkpoints (title, description, department, recurrence_type, starts_on, ends_on, due_date, created_by)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      INSERT INTO team_checkpoints (
+        title, description, department, recurrence_type,
+        starts_on, ends_on, due_date,
+        starts_at, ends_at, due_at,
+        created_by
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
       RETURNING id
       `,
-      [title, description, department, recurrenceType, startsOn, endsOn, dueDate, session.id]
+      [
+        title,
+        description,
+        department,
+        recurrenceType,
+        startsOn,
+        endsOn,
+        dueDate,
+        startsAt,
+        endsAt,
+        dueAt,
+        session.id,
+      ]
     );
 
     const checkpointId = checkpointResult.rows[0]?.id as number;
@@ -177,16 +206,26 @@ export async function PATCH(request: NextRequest) {
     await ensureCheckpointTables();
 
     const body = await request.json() as {
-      action?: 'assign' | 'remove';
+      action?: 'assign' | 'remove' | 'update' | 'toggle_active';
       checkpointId?: number;
       employeeIds?: string[];
+      title?: string;
+      description?: string;
+      recurrenceType?: 'one_time' | 'daily' | 'weekly' | 'monthly';
+      startsOn?: string | null;
+      endsOn?: string | null;
+      dueDate?: string | null;
+      startsAt?: string | null;
+      endsAt?: string | null;
+      dueAt?: string | null;
+      isActive?: boolean;
     };
 
     const action = body.action;
     const checkpointId = Number(body.checkpointId);
     const employeeIds = Array.isArray(body.employeeIds) ? body.employeeIds : [];
 
-    if (!action || Number.isNaN(checkpointId) || employeeIds.length === 0) {
+    if (!action || Number.isNaN(checkpointId)) {
       return NextResponse.json<ApiResponse>({ success: false, error: 'Invalid payload' }, { status: 400 });
     }
 
@@ -212,11 +251,11 @@ export async function PATCH(request: NextRequest) {
         .map(user => user.employeeId)
     );
     const scopedIds = employeeIds.filter(id => validEmployeeIds.has(id));
-    if (scopedIds.length === 0) {
-      return NextResponse.json<ApiResponse>({ success: false, error: 'No valid team users selected' }, { status: 400 });
-    }
 
     if (action === 'assign') {
+      if (scopedIds.length === 0) {
+        return NextResponse.json<ApiResponse>({ success: false, error: 'No valid team users selected' }, { status: 400 });
+      }
       for (const employeeId of scopedIds) {
         await pool.query(
           `
@@ -230,15 +269,73 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json<ApiResponse>({ success: true, message: `Assigned to ${scopedIds.length} user(s)` });
     }
 
-    await pool.query(
-      `
-      DELETE FROM employee_checkpoints
-      WHERE checkpoint_id = $1
-        AND employee_id = ANY($2::text[])
-      `,
-      [checkpointId, scopedIds]
-    );
-    return NextResponse.json<ApiResponse>({ success: true, message: `Removed from ${scopedIds.length} user(s)` });
+    if (action === 'remove') {
+      if (scopedIds.length === 0) {
+        return NextResponse.json<ApiResponse>({ success: false, error: 'No valid team users selected' }, { status: 400 });
+      }
+      await pool.query(
+        `
+        DELETE FROM employee_checkpoints
+        WHERE checkpoint_id = $1
+          AND employee_id = ANY($2::text[])
+        `,
+        [checkpointId, scopedIds]
+      );
+      return NextResponse.json<ApiResponse>({ success: true, message: `Removed from ${scopedIds.length} user(s)` });
+    }
+
+    if (action === 'toggle_active') {
+      if (typeof body.isActive !== 'boolean') {
+        return NextResponse.json<ApiResponse>({ success: false, error: 'Invalid active flag' }, { status: 400 });
+      }
+      await pool.query(`UPDATE team_checkpoints SET is_active = $1 WHERE id = $2`, [body.isActive, checkpointId]);
+      return NextResponse.json<ApiResponse>({ success: true, message: body.isActive ? 'Activated' : 'Deactivated' });
+    }
+
+    if (action === 'update') {
+      const title = body.title?.trim();
+      if (!title) {
+        return NextResponse.json<ApiResponse>({ success: false, error: 'Title is required' }, { status: 400 });
+      }
+      const description = body.description?.trim() || null;
+      const recurrenceType =
+        body.recurrenceType && ['one_time', 'daily', 'weekly', 'monthly'].includes(body.recurrenceType)
+          ? body.recurrenceType
+          : 'one_time';
+
+      const startsOn = body.startsOn ? String(body.startsOn).trim() : null;
+      const endsOn = body.endsOn ? String(body.endsOn).trim() : null;
+      const dueDate = body.dueDate ? String(body.dueDate).trim() : null;
+      const startsAt = body.startsAt ? String(body.startsAt).trim() : null;
+      const endsAt = body.endsAt ? String(body.endsAt).trim() : null;
+      const dueAt = body.dueAt ? String(body.dueAt).trim() : null;
+
+      const scheduleStart = startsAt ?? startsOn;
+      const scheduleEnd = endsAt ?? endsOn;
+      if (scheduleStart && scheduleEnd && scheduleStart > scheduleEnd) {
+        return NextResponse.json<ApiResponse>({ success: false, error: 'Start cannot be after end' }, { status: 400 });
+      }
+
+      await pool.query(
+        `
+        UPDATE team_checkpoints
+        SET title = $1,
+            description = $2,
+            recurrence_type = $3,
+            starts_on = $4,
+            ends_on = $5,
+            due_date = $6,
+            starts_at = $7,
+            ends_at = $8,
+            due_at = $9
+        WHERE id = $10
+        `,
+        [title, description, recurrenceType, startsOn, endsOn, dueDate, startsAt, endsAt, dueAt, checkpointId]
+      );
+      return NextResponse.json<ApiResponse>({ success: true, message: 'Checklist updated' });
+    }
+
+    return NextResponse.json<ApiResponse>({ success: false, error: 'Unsupported action' }, { status: 400 });
   } catch (error) {
     console.error('Update checkpoint assignments error:', error);
     return NextResponse.json<ApiResponse>({ success: false, error: 'Failed to update checklist assignments' }, { status: 500 });

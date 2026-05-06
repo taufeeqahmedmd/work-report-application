@@ -52,6 +52,14 @@ export default function EmployeeDashboardPage() {
     title: string;
     description: string | null;
     department: string;
+    isActive?: boolean;
+    recurrenceType: 'one_time' | 'daily' | 'weekly' | 'monthly';
+    startsAt?: string | null;
+    endsAt?: string | null;
+    dueAt?: string | null;
+    startsOn?: string | null;
+    endsOn?: string | null;
+    dueDate?: string | null;
     isCompleted: boolean;
   }>>([]);
 
@@ -235,6 +243,22 @@ export default function EmployeeDashboardPage() {
       toast.error('Failed to update checklist');
     }
   }, []);
+
+  const formatChecklistDateTime = useCallback((value?: string | null) => {
+    if (!value) return null;
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return value;
+    return date.toLocaleString();
+  }, []);
+
+  const checklistStats = useMemo(() => {
+    const total = checkpoints.length;
+    const completed = checkpoints.filter((c) => c.isCompleted).length;
+    const pending = total - completed;
+    const recurringTotal = checkpoints.filter((c) => c.recurrenceType !== 'one_time').length;
+    const limitedTotal = total - recurringTotal;
+    return { total, completed, pending, recurringTotal, limitedTotal };
+  }, [checkpoints]);
 
   const handleEditClick = useCallback((report: WorkReport) => {
     setEditingReport(report);
@@ -774,6 +798,21 @@ export default function EmployeeDashboardPage() {
                     Checkpoints assigned by your manager or team head.
                   </p>
                 </div>
+                <div className="p-3 sm:p-4 border-b">
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="rounded-sm border bg-muted/20 p-2">
+                      <p className="text-[10px] uppercase tracking-[0.06em] text-muted-foreground">Completed (current period)</p>
+                      <p className="text-lg font-semibold">{checklistStats.completed}/{checklistStats.total}</p>
+                    </div>
+                    <div className="rounded-sm border bg-muted/20 p-2">
+                      <p className="text-[10px] uppercase tracking-[0.06em] text-muted-foreground">Pending</p>
+                      <p className="text-lg font-semibold">{checklistStats.pending}</p>
+                    </div>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground mt-2">
+                    Recurring: {checklistStats.recurringTotal} • Limited/one-time: {checklistStats.limitedTotal}
+                  </p>
+                </div>
                 <div className="p-3 sm:p-4 space-y-2">
                   {checkpoints.length === 0 ? (
                     <p className="text-sm text-muted-foreground">No checklist items assigned yet.</p>
@@ -789,6 +828,17 @@ export default function EmployeeDashboardPage() {
                         <span className="text-sm">
                           <span className={`font-medium ${item.isCompleted ? 'line-through text-muted-foreground' : ''}`}>{item.title}</span>
                           {item.description ? <span className="block text-xs text-muted-foreground mt-0.5">{item.description}</span> : null}
+                          <span className="block text-[11px] text-muted-foreground mt-1">
+                            {item.recurrenceType === 'one_time' ? 'Limited time / one-time' : `Recurring - ${item.recurrenceType}`}
+                          </span>
+                          {(item.startsAt || item.endsAt || item.dueAt || item.startsOn || item.endsOn || item.dueDate) ? (
+                            <span className="block text-[11px] text-muted-foreground">
+                              {item.recurrenceType === 'one_time'
+                                ? `${formatChecklistDateTime(item.startsAt ?? item.startsOn) || '-'} -> ${formatChecklistDateTime(item.endsAt ?? item.endsOn) || '-'}`
+                                : `Due ${formatChecklistDateTime(item.dueAt ?? item.dueDate) || '-'}`
+                              }
+                            </span>
+                          ) : null}
                         </span>
                       </label>
                     ))

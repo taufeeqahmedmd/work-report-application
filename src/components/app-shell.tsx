@@ -13,6 +13,7 @@ import {
   User,
   CalendarCheck,
   UserCheck,
+  ListChecks,
   LogOut,
   LifeBuoy,
   Menu,
@@ -51,6 +52,7 @@ function buildSidebarLinks(session: SessionUser): ShellLink[] {
   }
   if (isManagerLike) {
     links.push({ href: '/manage-team', label: 'Team Management', icon: Users });
+    links.push({ href: '/checkpoints', label: 'Checkpoints', icon: ListChecks });
   }
   // Managers/team heads use Team Reports (heatmap) only; skip duplicate Analytics link.
   if (pageAccess.management_dashboard && !isManagerLike) {
@@ -226,14 +228,14 @@ export function AppShell({
   const headerInitial = session.name.charAt(0).toUpperCase();
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="h-screen overflow-hidden bg-background">
       <div className="px-3 sm:px-4 md:px-6 py-4">
-        <div className="grid gap-4 lg:grid-cols-[220px_1fr]">
-          <aside className="hidden lg:flex lg:flex-col rounded-md border border-primary/30 bg-primary text-primary-foreground overflow-hidden min-h-[calc(100vh-2rem)]">
+        <div className="grid h-[calc(100vh-2rem)] min-h-0 gap-4 lg:grid-cols-[220px_1fr]">
+          <aside className="hidden lg:flex lg:h-full lg:flex-col rounded-md border border-primary/30 bg-primary text-primary-foreground overflow-hidden">
             <SidebarNav links={links} pathname={pathname} onLogout={handleLogout} />
           </aside>
 
-          <div className="flex flex-col min-w-0">
+          <div className="flex min-h-0 flex-col min-w-0">
             {/* Mobile/Tablet header bar */}
             <div className="lg:hidden mb-3 flex items-center justify-between rounded-md border bg-card px-3 py-2">
               <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
@@ -279,7 +281,7 @@ export function AppShell({
                 <ThemeToggle className="h-8 w-8 rounded-sm border border-border bg-card text-foreground hover:bg-muted dark:bg-card dark:hover:bg-muted shrink-0" />
               </div>
             )}
-            <main className="min-w-0">{children}</main>
+            <main className="min-w-0 flex-1 min-h-0 overflow-y-auto">{children}</main>
           </div>
         </div>
       </div>
