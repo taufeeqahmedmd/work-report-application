@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { ThemeToggle } from '@/components/theme-toggle';
 import type { Entity, Branch, Department, WorkReport } from '@/types';
 
 interface EmployeeReportStatus {
@@ -285,6 +286,12 @@ export default function ManagementDashboardPage() {
                 <Shield className="h-4 w-4" /> Admin Portal
               </Link>
             </nav>
+            <div className="mt-auto px-3 py-3 border-t border-primary-foreground/10">
+              <div className="flex items-center justify-between rounded-sm border border-primary-foreground/20 px-3 py-2 text-xs uppercase tracking-[0.06em] text-primary-foreground/80">
+                Theme
+                <ThemeToggle />
+              </div>
+            </div>
           </aside>
 
           <main className="space-y-4">

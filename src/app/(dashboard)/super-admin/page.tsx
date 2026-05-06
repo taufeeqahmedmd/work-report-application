@@ -11,6 +11,7 @@ import { Loader2, Plus, Building2, GitBranch, Users, Search, Trash2, UserX, User
 import { toast } from 'sonner';
 import type { SafeEmployee, Entity, Branch, Department, EditPermissions, PageAccess } from '@/types';
 import { DEFAULT_PAGE_ACCESS } from '@/types';
+import { ThemeToggle } from '@/components/theme-toggle';
 
 export default function SuperAdminPage() {
   const [loading, setLoading] = useState(true);
@@ -1056,6 +1057,12 @@ export default function SuperAdminPage() {
               <Shield className="h-4 w-4" /> Admin Portal
             </Link>
           </nav>
+          <div className="mt-auto px-3 py-3 border-t border-primary-foreground/10">
+            <div className="flex items-center justify-between rounded-sm border border-primary-foreground/20 px-3 py-2 text-xs uppercase tracking-[0.06em] text-primary-foreground/80">
+              Theme
+              <ThemeToggle />
+            </div>
+          </div>
         </aside>
 
       <main className="max-w-7xl mx-auto w-full">

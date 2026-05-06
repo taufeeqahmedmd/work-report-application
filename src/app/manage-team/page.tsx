@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { ThemeToggle } from '@/components/theme-toggle';
 import { toast } from 'sonner';
 import type { Department, SafeEmployee, SessionUser } from '@/types';
 import { Search, Bell, CircleHelp, Settings, Activity, FileText, Users, TrendingUp, Shield, UserPlus, Download, Upload } from 'lucide-react';
@@ -251,6 +252,12 @@ export default function ManageTeamPage() {
               <Link href="/management-dashboard" className="flex items-center gap-3 rounded-sm px-3 py-2 text-xs font-semibold uppercase tracking-[0.06em] text-primary-foreground/80 hover:bg-primary-foreground/8 hover:text-primary-foreground"><TrendingUp className="h-4 w-4" /> Analytics</Link>
               <Link href="/admin" className="flex items-center gap-3 rounded-sm px-3 py-2 text-xs font-semibold uppercase tracking-[0.06em] text-primary-foreground/80 hover:bg-primary-foreground/8 hover:text-primary-foreground"><Shield className="h-4 w-4" /> Admin Portal</Link>
             </nav>
+            <div className="mt-auto px-3 py-3 border-t border-primary-foreground/10">
+              <div className="flex items-center justify-between rounded-sm border border-primary-foreground/20 px-3 py-2 text-xs uppercase tracking-[0.06em] text-primary-foreground/80">
+                Theme
+                <ThemeToggle />
+              </div>
+            </div>
           </aside>
 
           <main className="space-y-4">

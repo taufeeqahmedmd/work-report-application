@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { ThemeToggle } from '@/components/theme-toggle';
 import { 
   Loader2, 
   FileText, 
@@ -39,7 +40,7 @@ import { toast } from 'sonner';
 import Link from 'next/link';
 import type { WorkReport, SessionUser, WorkStatus, EditPermissions, Holiday } from '@/types';
 import { DEFAULT_PAGE_ACCESS } from '@/types';
-import { getISTTodayDateString, getShortDayIST, getShortDateIST, formatDateForDisplay, getDayOfMonthIST, convertUTCToISTDate } from '@/lib/date';
+import { getISTTodayDateString, getISTYear, getShortDayIST, getShortDateIST, formatDateForDisplay, getDayOfMonthIST, convertUTCToISTDate } from '@/lib/date';
 import { logger } from '@/lib/logger';
 import { WorkReportCalendar } from '@/components/work-report-calendar';
 
@@ -47,6 +48,8 @@ export default function EmployeeDashboardPage() {
   const [session, setSession] = useState<SessionUser | null>(null);
   const [sessionLoading, setSessionLoading] = useState(true);
   const [reports, setReports] = useState<WorkReport[]>([]);
+  /** Full-window fetch for calendar coloring — independent of list date filter */
+  const [calendarReports, setCalendarReports] = useState<WorkReport[]>([]);
   const [loading, setLoading] = useState(false);
   const [editPermissions, setEditPermissions] = useState<EditPermissions | null>(null);
   const [holidays, setHolidays] = useState<Holiday[]>([]);
@@ -145,7 +148,31 @@ export default function EmployeeDashboardPage() {
     }
   }, [session?.employeeId, dateRange.start, dateRange.end]);
 
-  // Fetch reports when session is loaded
+  const fetchCalendarReports = useCallback(async () => {
+    if (!session?.employeeId) return;
+    try {
+      const y = getISTYear();
+      const params = new URLSearchParams({
+        employeeId: session.employeeId,
+        startDate: `${y - 1}-01-01`,
+        endDate: `${y + 1}-12-31`,
+      });
+      const response = await fetch(`/api/work-reports?${params.toString()}`);
+      const data = await response.json();
+      if (data.success) {
+        setCalendarReports(data.data.reports || []);
+      }
+    } catch (err) {
+      logger.error('Failed to fetch calendar reports:', err);
+    }
+  }, [session?.employeeId]);
+
+  useEffect(() => {
+    if (session?.employeeId) {
+      fetchCalendarReports();
+    }
+  }, [session?.employeeId, fetchCalendarReports]);
+
   useEffect(() => {
     if (session?.employeeId) {
       fetchReports();
@@ -257,6 +284,9 @@ export default function EmployeeDashboardPage() {
         setReports(prev => prev.map(r => 
           r.id === editingReport.id ? data.data : r
         ));
+        setCalendarReports((prev) =>
+          prev.map((r) => (r.id === editingReport.id ? data.data : r))
+        );
         handleCancelEdit();
       } else {
         toast.error(data.error || 'Failed to update report');
@@ -297,7 +327,11 @@ export default function EmployeeDashboardPage() {
   
   // Check if today's report is submitted (using IST)
   const today = useMemo(() => getISTTodayDateString(), []);
-  const todayReport = useMemo(() => reports.find(r => r.date === today), [reports, today]);
+  const todayReport = useMemo(() => {
+    const fromCalendar = calendarReports.find((r) => r.date === today);
+    if (fromCalendar) return fromCalendar;
+    return reports.find((r) => r.date === today);
+  }, [calendarReports, reports, today]);
   const pageAccess = session?.pageAccess ?? (session ? DEFAULT_PAGE_ACCESS[session.role] : null);
 
   const sidebarLinks = useMemo(() => {
@@ -405,6 +439,10 @@ export default function EmployeeDashboardPage() {
               })}
             </nav>
             <div className="mt-auto px-2 py-3 border-t border-primary-foreground/10 space-y-1">
+              <div className="mb-2 flex items-center justify-between rounded-sm border border-primary-foreground/20 px-3 py-2 text-xs uppercase tracking-[0.06em] text-primary-foreground/80">
+                Theme
+                <ThemeToggle />
+              </div>
               <button className="w-full flex items-center gap-3 rounded-sm px-3 py-2 text-xs font-semibold uppercase tracking-[0.06em] text-primary-foreground/80 hover:bg-primary-foreground/8 hover:text-primary-foreground">
                 <LifeBuoy className="h-4 w-4" /> Support
               </button>
@@ -431,7 +469,7 @@ export default function EmployeeDashboardPage() {
             <div className="grid gap-4 xl:grid-cols-[1fr_320px]">
               <div className="space-y-4 min-w-0">
           <div className="p-4 sm:p-6 rounded-md bg-card border shadow-sm">
-            <div className="flex flex-col lg:flex-row items-start gap-4 sm:gap-6">
+            <div className="flex items-start gap-4 sm:gap-6">
               {/* Left Section - Profile Info */}
               <div className="flex items-start gap-3 sm:gap-4 flex-1 min-w-0 w-full">
                 {/* Avatar */}
@@ -484,40 +522,13 @@ export default function EmployeeDashboardPage() {
                       </span>
                     )}
                   </div>
-                </div>
-              </div>
 
-              {/* Right Section - Today's Report Action */}
-              <div className="flex flex-col lg:items-end lg:text-right w-full lg:w-auto lg:min-w-[200px] pt-4 lg:pt-0 border-t lg:border-t-0 border-border/60">
-                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center mb-2 sm:mb-3 bg-muted/50 lg:ml-auto">
-                  {todayReport ? (
-                    <CheckCircle2 className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-600" />
-                  ) : (
-                    <CalendarDays className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
-                  )}
+                  <p className="mt-2 text-xs sm:text-sm text-muted-foreground">
+                    {todayReport
+                      ? `You marked ${todayReport.status === 'working' ? 'working' : 'leave'} for today.`
+                      : 'Daily report is pending. You can submit it from the left sidebar.'}
+                  </p>
                 </div>
-                
-                <h3 className="font-semibold text-sm sm:text-base mb-1">
-                  {todayReport ? 'Report Submitted' : 'Today\'s Report'}
-                </h3>
-                <p className="text-xs sm:text-sm text-muted-foreground mb-3 sm:mb-4">
-                  {todayReport 
-                    ? `You marked ${todayReport.status === 'working' ? 'working' : 'leave'} for today.`
-                    : 'Don\'t forget to submit your daily work report.'}
-                </p>
-                
-                <Link href="/work-report" className="block w-full lg:w-auto">
-                  <Button 
-                    size="sm" 
-                    className="w-full lg:w-auto bg-primary text-primary-foreground hover:bg-primary/90 uppercase text-xs tracking-[0.06em]"
-                  >
-                    {todayReport ? (
-                      <>View Report</>
-                    ) : (
-                      <><Plus className="h-4 w-4 mr-1.5" /> Submit Report</>
-                    )}
-                  </Button>
-                </Link>
               </div>
             </div>
           </div>
@@ -877,13 +888,17 @@ export default function EmployeeDashboardPage() {
               </div>
 
               <WorkReportCalendar 
-                reports={reports} 
+                reports={calendarReports}
                 holidays={holidays}
                 onDateClick={(date) => {
-                  const report = reports.find(r => r.date === date);
-                  if (report) {
+                  const report = calendarReports.find(r => r.date === date);
+                  if (!report) return;
+                  const inList = reports.some((r) => r.id === report.id);
+                  if (inList) {
                     setExpandedReportId(report.id);
                     document.getElementById(`report-${report.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  } else {
+                    toast.message('This date is outside your list filter. Widen the date range above to open that report here.');
                   }
                 }}
               />

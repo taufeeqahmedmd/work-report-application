@@ -140,6 +140,14 @@ export function Navbar() {
   // Holidays link - show if user can mark holidays (Manager, Admin, Super Admin, or Operations with permission)
   const canMarkHolidaysAccess = canMarkHolidays(user);
 
+  const publicRoutes = new Set(['/', '/login', '/reset-password']);
+  const isPublicRoute = publicRoutes.has(pathname);
+
+  // Navbar is only needed before login (public routes).
+  if ((loading && !isPublicRoute) || user) {
+    return null;
+  }
+
   return (
     <nav 
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
@@ -269,71 +277,6 @@ export function Navbar() {
           
           {loading ? (
             <div className="h-9 w-9 rounded-lg bg-muted animate-pulse" />
-          ) : user ? (
-            isEmployeeUser ? (
-              <div className="flex items-center gap-2 px-1">
-                <Avatar className="h-7 w-7">
-                  <AvatarFallback className="bg-foreground text-background text-xs font-medium">
-                    {getInitials(user.name)}
-                  </AvatarFallback>
-                </Avatar>
-                <span className="hidden sm:inline-block text-sm font-medium">
-                  {user.name.split(' ')[0]}
-                </span>
-              </div>
-            ) : (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="h-9 gap-2 px-2 hover:bg-muted">
-                    <Avatar className="h-7 w-7 transition-transform hover:scale-105">
-                      <AvatarFallback className="bg-foreground text-background text-xs font-medium">
-                        {getInitials(user.name)}
-                      </AvatarFallback>
-                    </Avatar>
-                    <span className="hidden sm:inline-block text-sm font-medium">
-                      {user.name.split(' ')[0]}
-                    </span>
-                    <ChevronDown className="h-3 w-3 text-muted-foreground" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-56 animate-scale-in" align="end">
-                  <DropdownMenuLabel className="font-normal">
-                    <div className="flex flex-col space-y-1">
-                      <p className="text-sm font-medium">{user.name}</p>
-                      <p className="text-xs text-muted-foreground truncate">{user.email}</p>
-                      <span className={`inline-flex w-fit text-xs px-2 py-0.5 rounded font-medium mt-1 ${
-                        user.role === 'superadmin' 
-                          ? 'role-superadmin' 
-                                      : user.role === 'admin' 
-                            ? 'role-admin' 
-                            : user.role === 'boardmember'
-                              ? 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300'
-                              : user.role === 'teamhead'
-                                ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300'
-                              : 'role-employee'
-                      }`}>
-                        {user.role === 'boardmember' ? 'Board Member' : user.role === 'teamhead' ? 'Team Head' : user.role}
-                      </span>
-                    </div>
-                  </DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild className="cursor-pointer">
-                    <Link href="/profile">
-                      <User className="mr-2 h-4 w-4" />
-                      Profile
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem 
-                    onClick={handleLogout} 
-                    className="cursor-pointer text-destructive focus:text-destructive focus:bg-destructive/10"
-                  >
-                    <LogOut className="mr-2 h-4 w-4" />
-                    Log out
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )
           ) : (
             <Button asChild size="sm" className="btn-shine">
               <Link href="/login">Sign in</Link>
@@ -358,22 +301,6 @@ export function Navbar() {
                     <span className="font-semibold">WorkReport</span>
                   </div>
                 </div>
-
-                {user && (
-                  <div className="p-4 border-b bg-muted/30">
-                    <div className="flex items-center gap-3">
-                      <Avatar className="h-10 w-10">
-                        <AvatarFallback className="bg-foreground text-background font-medium">
-                          {getInitials(user.name)}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-sm truncate">{user.name}</p>
-                        <p className="text-xs text-muted-foreground truncate">{user.email}</p>
-                      </div>
-                    </div>
-                  </div>
-                )}
 
                 <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
                   {/* Board members don't see regular nav links */}
@@ -469,40 +396,13 @@ export function Navbar() {
                 </nav>
 
                 <div className="p-4 border-t space-y-2">
-                  {user && (
-                    <Button 
-                      asChild
-                      variant="outline" 
-                      className="w-full active-press"
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      <Link href="/profile">
-                        <User className="mr-2 h-4 w-4" />
-                        Profile
-                      </Link>
-                    </Button>
-                  )}
-                  {user ? (
-                    <Button 
-                      variant="outline" 
-                      className="w-full active-press text-destructive hover:text-destructive"
-                      onClick={() => {
-                        handleLogout();
-                        setMobileMenuOpen(false);
-                      }}
-                    >
-                      <LogOut className="mr-2 h-4 w-4" />
-                      Log out
-                    </Button>
-                  ) : (
-                    <Button 
-                      asChild 
-                      className="w-full btn-shine"
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      <Link href="/login">Sign in</Link>
-                    </Button>
-                  )}
+                  <Button 
+                    asChild 
+                    className="w-full btn-shine"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    <Link href="/login">Sign in</Link>
+                  </Button>
                 </div>
               </div>
             </SheetContent>

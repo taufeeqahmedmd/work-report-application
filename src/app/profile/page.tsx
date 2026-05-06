@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { ThemeToggle } from '@/components/theme-toggle';
 import { 
   Loader2, 
   User, 
@@ -192,6 +193,12 @@ export default function ProfilePage() {
                 <Shield className="h-4 w-4" /> Profile
               </Link>
             </nav>
+            <div className="mt-auto px-3 py-3 border-t border-primary-foreground/10">
+              <div className="flex items-center justify-between rounded-sm border border-primary-foreground/20 px-3 py-2 text-xs uppercase tracking-[0.06em] text-primary-foreground/80">
+                Theme
+                <ThemeToggle />
+              </div>
+            </div>
           </aside>
 
           <main className="space-y-4">
