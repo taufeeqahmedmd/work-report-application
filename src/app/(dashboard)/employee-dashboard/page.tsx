@@ -35,6 +35,7 @@ import type { WorkReport, SessionUser, WorkStatus, EditPermissions, Holiday } fr
 import { getISTTodayDateString, getISTYear, getShortDayIST, getShortDateIST, formatDateForDisplay, getDayOfMonthIST, convertUTCToISTDate } from '@/lib/date';
 import { logger } from '@/lib/logger';
 import { WorkReportCalendar } from '@/components/work-report-calendar';
+import { ThemeToggle } from '@/components/theme-toggle';
 
 export default function EmployeeDashboardPage() {
   const [session, setSession] = useState<SessionUser | null>(null);
@@ -360,9 +361,10 @@ export default function EmployeeDashboardPage() {
                   <h1 className="text-2xl font-semibold tracking-[-0.01em]">Dashboard</h1>
                   <p className="text-sm text-muted-foreground">Welcome back, {session.name.split(' ')[0]}</p>
                 </div>
-                <div className="flex items-center gap-3">
-                  <button className="inline-flex h-8 w-8 items-center justify-center rounded-sm border text-muted-foreground"><Bell className="h-4 w-4" /></button>
-                  <button className="inline-flex h-8 w-8 items-center justify-center rounded-sm border text-muted-foreground"><Settings className="h-4 w-4" /></button>
+                <div className="flex items-center gap-2 sm:gap-3">
+                  <ThemeToggle className="h-8 w-8 rounded-sm border border-border text-muted-foreground hover:bg-muted hover:text-foreground shrink-0" />
+                  <button type="button" className="inline-flex h-8 w-8 items-center justify-center rounded-sm border text-muted-foreground hover:bg-muted"><Bell className="h-4 w-4" /></button>
+                  <button type="button" className="inline-flex h-8 w-8 items-center justify-center rounded-sm border text-muted-foreground hover:bg-muted"><Settings className="h-4 w-4" /></button>
                 </div>
               </div>
             </div>
@@ -548,7 +550,7 @@ export default function EmployeeDashboardPage() {
               </div>
             </div>
             
-            <div className="p-2 sm:p-3">
+            <div className="p-2 sm:p-3 min-h-0">
               {loading ? (
                 <div className="flex items-center justify-center py-16">
                   <div className="flex flex-col items-center gap-3">
@@ -573,7 +575,12 @@ export default function EmployeeDashboardPage() {
                   </Link>
                 </div>
               ) : (
-                <div className="space-y-2">
+                <div
+                  className="max-h-[min(55vh,28rem)] sm:max-h-[min(65vh,40rem)] overflow-y-auto overscroll-y-contain rounded-md border border-border/40 bg-muted/5 -mx-0.5 px-2 sm:px-3 py-2"
+                  role="region"
+                  aria-label="Work report list"
+                >
+                  <div className="space-y-2">
                   {reports.map((report, index) => (
                     <div 
                       key={report.id}
@@ -752,6 +759,7 @@ export default function EmployeeDashboardPage() {
                       </div>
                     </div>
                   ))}
+                  </div>
                 </div>
               )}
             </div>

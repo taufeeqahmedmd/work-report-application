@@ -52,7 +52,8 @@ function buildSidebarLinks(session: SessionUser): ShellLink[] {
   if (isManagerLike) {
     links.push({ href: '/manage-team', label: 'Team Management', icon: Users });
   }
-  if (pageAccess.management_dashboard) {
+  // Managers/team heads use Team Reports (heatmap) only; skip duplicate Analytics link.
+  if (pageAccess.management_dashboard && !isManagerLike) {
     links.push({ href: '/management-dashboard', label: 'Analytics', icon: CalendarDays });
   }
   if (pageAccess.admin_dashboard) {
@@ -118,16 +119,13 @@ function SidebarNav({
         })}
       </nav>
       <div className="px-2 py-3 border-t border-primary-foreground/10 space-y-1">
-        <div className="mb-2 flex items-center justify-between rounded-sm border border-primary-foreground/20 px-3 py-2 text-xs uppercase tracking-[0.06em] text-primary-foreground/80">
-          Theme
-          <ThemeToggle />
-        </div>
-        <button
-          type="button"
+        <a
+          href="mailto:websites@k-innovative.com"
+          onClick={() => onNavigate?.()}
           className="w-full flex items-center gap-3 rounded-sm px-3 py-2 text-xs font-semibold uppercase tracking-[0.06em] text-primary-foreground/80 hover:bg-primary-foreground/8 hover:text-primary-foreground"
         >
           <LifeBuoy className="h-4 w-4" /> Support
-        </button>
+        </a>
         <button
           type="button"
           onClick={onLogout}
@@ -263,6 +261,8 @@ export function AppShell({
               <Link href="/" className="text-sm font-semibold tracking-[-0.01em]">
                 Work Report
               </Link>
+              <div className="flex items-center gap-2">
+                <ThemeToggle className="h-8 w-8 rounded-sm border border-border bg-card text-foreground hover:bg-muted dark:bg-card dark:hover:bg-muted shrink-0" />
               <Link
                 href="/profile"
                 className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-semibold"
@@ -270,8 +270,15 @@ export function AppShell({
               >
                 {headerInitial}
               </Link>
+              </div>
             </div>
 
+            {/* Desktop theme control when the page has no header toggle of its own. */}
+            {!['/employee-dashboard', '/team-report', '/management-dashboard'].includes(pathname) && (
+              <div className="hidden lg:flex justify-end mb-3">
+                <ThemeToggle className="h-8 w-8 rounded-sm border border-border bg-card text-foreground hover:bg-muted dark:bg-card dark:hover:bg-muted shrink-0" />
+              </div>
+            )}
             <main className="min-w-0">{children}</main>
           </div>
         </div>
